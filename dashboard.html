@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — AgenticCore Agency</title>
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">
+      <svg viewBox="0 0 100 100" fill="none"><polygon points="50,8 88,29 88,71 50,92 12,71 12,29" stroke="#22D3EE" stroke-width="4"/><polygon points="50,28 70,40 70,60 50,72 30,60 30,40" stroke="#3B82F6" stroke-width="3"/></svg>
+      AgenticCore
+    </a>
+    <div class="nav-links">
+      <a href="services.html">Services</a>
+      <a href="how-it-works.html">How it works</a>
+      <a href="business-pool.html">Business Pool</a>
+      <a href="referral.html">Referrals</a>
+    </div>
+    <div class="nav-cta">
+      <a href="index.html" class="btn btn-primary btn-sm">Home</a>
+      <button type="button" class="btn btn-secondary btn-sm" id="logoutBtn">Log out</button>
+    </div>
+  </div>
+</nav>
+
+<header class="dash-header">
+  <div class="container">
+    <h1 id="welcomeHeading">Welcome back</h1>
+    <div class="dash-top-grid">
+      <div class="dash-card">
+        <span class="panel-tag">Your referral link</span>
+        <div class="referral-link-row">
+          <input type="text" id="referralLinkInput" readonly aria-label="Your referral link">
+          <button type="button" class="btn btn-secondary btn-sm" id="copyReferralBtn">Copy</button>
+        </div>
+        <p class="dash-card-note">Earn 20% in Points on everyone you refer directly, on their first 3 paid projects.</p>
+      </div>
+      <div class="dash-card">
+        <span class="panel-tag">AgenticCore Points</span>
+        <div class="points-balance" id="pointsBalance">—</div>
+        <p class="dash-card-note">1 Point = $1 of credit toward any service.</p>
+      </div>
+      <div class="dash-card" id="supportCard">
+        <span class="panel-tag" id="supportTag">Support</span>
+        <p class="dash-card-note" id="supportText">Loading...</p>
+        <a href="#" class="btn btn-secondary btn-sm" id="supportLink" target="_blank" rel="noopener">Message us on Telegram</a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="dash-body">
+  <div class="container dash-layout">
+    <div class="dash-tabs" id="dashTabs" role="tablist">
+      <button type="button" class="dash-tab active" data-tab="projects">My Projects</button>
+      <button type="button" class="dash-tab" data-tab="services">Services</button>
+      <button type="button" class="dash-tab" data-tab="new-request">New Request</button>
+      <button type="button" class="dash-tab" data-tab="billing">Billing</button>
+    </div>
+
+    <div class="dash-panels">
+
+      <div class="dash-panel active" id="panel-projects">
+        <h2>Pending requests</h2>
+        <p class="dash-empty" id="requestsEmpty">You don't have any pending requests.</p>
+        <div class="request-list" id="requestsList"></div>
+
+        <h2 style="margin-top:var(--space-xl);">My Projects</h2>
+        <p class="dash-empty" id="projectsEmpty">No projects yet — submit a New Request to get started.</p>
+        <div class="project-list" id="projectsList"></div>
+      </div>
+
+      <div class="dash-panel" id="panel-services">
+        <h2>Pick a service to get started</h2>
+        <div class="service-quick-list">
+          <div class="service-quick-card" data-category="Websites">
+            <h3>Websites</h3>
+            <p>From a simple page to a full platform with logins and dashboards.</p>
+            <button type="button" class="btn btn-secondary btn-sm start-request-btn" data-category="Websites">Start a request →</button>
+          </div>
+          <div class="service-quick-card" data-category="Marketing">
+            <h3>Marketing</h3>
+            <p>Full-scope marketing, delivered through AgenticCore Biz.</p>
+            <button type="button" class="btn btn-secondary btn-sm start-request-btn" data-category="Marketing">Start a request →</button>
+          </div>
+          <div class="service-quick-card" data-category="Bookkeeping & Reports">
+            <h3>Bookkeeping &amp; Reports</h3>
+            <p>Receipts, balance sheets, and profit tracking kept current.</p>
+            <button type="button" class="btn btn-secondary btn-sm start-request-btn" data-category="Bookkeeping & Reports">Start a request →</button>
+          </div>
+          <div class="service-quick-card" data-category="Audits & Feasibility Reports">
+            <h3>Audits &amp; Feasibility Reports</h3>
+            <p>Real, branded reports before you commit a dollar.</p>
+            <button type="button" class="btn btn-secondary btn-sm start-request-btn" data-category="Audits & Feasibility Reports">Start a request →</button>
+          </div>
+          <div class="service-quick-card" data-category="Custom AI Agents">
+            <h3>Custom AI Agents</h3>
+            <p>From a single task to a full framework running your business.</p>
+            <button type="button" class="btn btn-secondary btn-sm start-request-btn" data-category="Custom AI Agents">Start a request →</button>
+          </div>
+        </div>
+        <p style="margin-top:var(--space-md);"><a href="services.html" style="color:var(--accent-cyan);border-bottom:1px solid rgba(34,211,238,0.3);">See every tier &amp; expected timeframe →</a></p>
+      </div>
+
+      <div class="dash-panel" id="panel-new-request">
+        <h2>New Request</h2>
+        <div class="dash-error" id="requestError"></div>
+        <div class="dash-success" id="requestSuccess"></div>
+        <form id="newRequestForm">
+          <div class="field-group">
+            <label for="reqCategory">Service category</label>
+            <select id="reqCategory" required>
+              <option value="">Select a category…</option>
+              <option value="Websites">Websites</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Bookkeeping & Reports">Bookkeeping &amp; Reports</option>
+              <option value="Audits & Feasibility Reports">Audits &amp; Feasibility Reports</option>
+              <option value="Custom AI Agents">Custom AI Agents</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="reqTier">Tier</label>
+            <select id="reqTier" required>
+              <option value="">Select a tier…</option>
+              <option value="low">Low — fast &amp; essential</option>
+              <option value="mid">Mid — balanced &amp; customized</option>
+              <option value="top">Top — premium &amp; hands-on</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label for="reqDescription">Describe what you need</label>
+            <textarea id="reqDescription" rows="5" required placeholder="Plain language is fine — no forms to fill out beyond this."></textarea>
+          </div>
+          <div class="field-group points-toggle-row" id="pointsToggleRow" style="display:none;">
+            <label class="points-toggle-label">
+              <input type="checkbox" id="applyPointsToggle">
+              Apply my AgenticCore Points to this request
+            </label>
+            <p class="dash-card-note" id="pointsToggleNote"></p>
+          </div>
+          <button type="submit" class="btn btn-primary" id="submitRequestBtn">Submit request</button>
+        </form>
+      </div>
+
+      <div class="dash-panel" id="panel-billing">
+        <h2>Billing history</h2>
+        <p class="dash-empty" id="billingEmpty">No billing activity yet.</p>
+        <div class="billing-list" id="billingList"></div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-client.js"></script>
+<script src="auth.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>

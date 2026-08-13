@@ -1,0 +1,304 @@
+/* ============================================
+   Dashboard header: welcome + referral/points/support cards
+   ============================================ */
+
+.dash-header {
+  padding: var(--space-xl) 0 var(--space-lg);
+  background: var(--bg-panel);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dash-header h1 {
+  font-size: 1.8rem;
+  margin-bottom: var(--space-lg);
+}
+
+.dash-top-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+}
+
+.dash-card {
+  background: linear-gradient(160deg, var(--bg-panel-hover), var(--bg-primary));
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+}
+
+.dash-card .panel-tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+  margin-bottom: var(--space-sm);
+  display: block;
+}
+
+.dash-card-note {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: var(--space-sm);
+}
+
+.referral-link-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.referral-link-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.points-balance {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+}
+
+#supportCard.is-business-pool {
+  border-color: rgba(34, 211, 238, 0.35);
+}
+
+/* ============================================
+   Tabs + panels
+   ============================================ */
+
+.dash-body {
+  padding: var(--space-lg) 0 var(--space-2xl);
+}
+
+.dash-tabs {
+  display: flex;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border-subtle);
+  margin-bottom: var(--space-lg);
+}
+
+.dash-tab {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 500;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.dash-tab:hover {
+  color: var(--text-primary);
+}
+
+.dash-tab.active {
+  color: var(--accent-cyan);
+  border-bottom-color: var(--accent-cyan);
+}
+
+.dash-panel {
+  display: none;
+}
+
+.dash-panel.active {
+  display: block;
+}
+
+.dash-panel h2 {
+  font-size: 1.2rem;
+  margin-bottom: var(--space-sm);
+}
+
+.dash-empty {
+  color: var(--text-tertiary);
+  font-size: 0.9rem;
+  padding: var(--space-md) 0;
+}
+
+/* ============================================
+   Requests / Projects / Billing lists
+   ============================================ */
+
+.request-list, .project-list, .billing-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.request-card, .project-card, .billing-row {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.request-card h4, .project-card h4, .billing-row h4 {
+  font-size: 0.98rem;
+  margin-bottom: 0.2rem;
+}
+
+.request-card p, .project-card p, .billing-row p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.status-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.status-draft, .status-pending, .status-awaiting_payment { background: rgba(139, 150, 168, 0.15); color: var(--text-secondary); }
+.status-confirmed, .status-in_progress { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
+.status-awaiting_review { background: rgba(234, 179, 8, 0.15); color: #FACC15; }
+.status-revision_requested { background: rgba(249, 115, 22, 0.15); color: #FB923C; }
+.status-delivered, .status-paid { background: rgba(34, 211, 238, 0.15); color: var(--accent-cyan); }
+.status-refunded { background: rgba(239, 68, 68, 0.15); color: #F87171; }
+
+.revisions-note {
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  margin-top: 0.3rem;
+}
+
+/* ============================================
+   Services quick list
+   ============================================ */
+
+.service-quick-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-md);
+}
+
+.service-quick-card {
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: var(--space-md);
+}
+
+.service-quick-card h3 {
+  font-size: 1.02rem;
+  margin-bottom: 0.4rem;
+}
+
+.service-quick-card p {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-bottom: var(--space-sm);
+}
+
+/* ============================================
+   New Request form
+   ============================================ */
+
+#panel-new-request .field-group {
+  margin-bottom: var(--space-md);
+}
+
+#panel-new-request label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.4rem;
+}
+
+#panel-new-request select,
+#panel-new-request textarea {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+}
+
+#panel-new-request select:focus,
+#panel-new-request textarea:focus {
+  outline: none;
+  border-color: var(--accent-cyan);
+}
+
+#panel-new-request textarea {
+  resize: vertical;
+}
+
+.points-toggle-row {
+  background: rgba(34, 211, 238, 0.05);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.points-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+  cursor: pointer;
+  margin-bottom: 0 !important;
+}
+
+.points-toggle-label input {
+  width: auto !important;
+}
+
+.dash-error, .dash-success {
+  display: none;
+  font-size: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-md);
+}
+
+.dash-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #F87171;
+}
+
+.dash-success {
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  color: var(--accent-cyan);
+}
+
+@media (max-width: 900px) {
+  .dash-top-grid {
+    grid-template-columns: 1fr;
+  }
+  .service-quick-list {
+    grid-template-columns: 1fr;
+  }
+  .request-card, .project-card, .billing-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
