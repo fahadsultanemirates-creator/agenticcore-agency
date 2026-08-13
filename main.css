@@ -308,6 +308,10 @@ img, svg {
   padding: 0.9rem 1.8rem;
 }
 
+.hero-image {
+  margin-top: var(--space-xl);
+}
+
 /* ============================================
    Section shared
    ============================================ */
