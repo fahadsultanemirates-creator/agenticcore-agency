@@ -16,6 +16,11 @@ function setLoading(btn, loading, defaultText) {
 
 // -------- SIGN UP --------
 const signupForm = document.getElementById('signupForm');
+const referralCodeInput = document.getElementById('referralCode');
+if (referralCodeInput) {
+  const refFromLink = new URLSearchParams(window.location.search).get('ref');
+  if (refFromLink) referralCodeInput.value = refFromLink;
+}
 if (signupForm) {
   signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -26,7 +31,7 @@ if (signupForm) {
     const name = document.getElementById('fullName').value.trim();
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const referralCode = new URLSearchParams(window.location.search).get('ref') || null;
+    const referralCode = referralCodeInput.value.trim().toUpperCase() || null;
 
     if (password.length < 8) {
       showAuthError(errorEl, 'Password must be at least 8 characters.');
@@ -92,14 +97,14 @@ if (loginForm) {
 // -------- LOG OUT (used on dashboard pages) --------
 async function logOut() {
   await supabaseClient.auth.signOut();
-  window.location.href = '../pages/login.html';
+  window.location.href = 'login.html';
 }
 
 // -------- ROUTE PROTECTION (used on dashboard pages) --------
 async function requireAuth() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) {
-    window.location.href = '../pages/login.html';
+    window.location.href = 'login.html';
     return null;
   }
   return session;

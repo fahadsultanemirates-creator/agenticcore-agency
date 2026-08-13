@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Create your account — AgenticCore Agency</title>
 <link rel="stylesheet" href="main.css">
-<link rel="stylesheet" href="css/auth.css">
+<link rel="stylesheet" href="auth.css">
 </head>
 <body>
 
@@ -31,6 +31,10 @@
       <div class="field-group">
         <label for="password">Password</label>
         <input type="password" id="password" required autocomplete="new-password" minlength="8">
+      </div>
+      <div class="field-group">
+        <label for="referralCode">Referral code <span style="color:var(--text-tertiary);font-weight:400;">(optional)</span></label>
+        <input type="text" id="referralCode" autocomplete="off" placeholder="e.g. AB12CD34">
       </div>
       <button type="submit" class="btn btn-primary" id="signupBtn">Create account</button>
     </form>
