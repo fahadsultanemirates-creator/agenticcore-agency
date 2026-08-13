@@ -69,8 +69,6 @@
       ctx.fillStyle = `rgba(34, 211, 238, ${0.35 + glow * 0.35})`;
       ctx.fill();
     }
-
-    requestAnimationFrame(step);
   }
 
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -78,8 +76,30 @@
   resize();
   initNodes();
 
+  let rafId = null;
+  function loop() {
+    step();
+    rafId = requestAnimationFrame(loop);
+  }
+  function start() {
+    if (rafId === null) rafId = requestAnimationFrame(loop);
+  }
+  function stop() {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+  }
+
   if (!reduceMotion) {
-    requestAnimationFrame(step);
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        start();
+      } else {
+        stop();
+      }
+    });
+    observer.observe(canvas);
   } else {
     step(); // draw once, static
   }
