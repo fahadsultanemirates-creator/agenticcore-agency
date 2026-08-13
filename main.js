@@ -6,4 +6,4 @@ window.addEventListener('scroll', () => {
   } else {
     nav.classList.remove('scrolled');
   }
-});
+}, { passive: true });
