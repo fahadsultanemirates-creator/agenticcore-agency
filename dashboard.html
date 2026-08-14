@@ -137,6 +137,11 @@
             <label for="reqDescription">Describe what you need</label>
             <textarea id="reqDescription" rows="5" required placeholder="Plain language is fine — no forms to fill out beyond this."></textarea>
           </div>
+          <div class="field-group">
+            <label for="reqAttachment">Attach a file <span style="color:var(--text-tertiary);font-weight:400;">(optional — reference images, briefs, existing branding, etc.)</span></label>
+            <input type="file" id="reqAttachment" accept="image/*,.pdf,.doc,.docx">
+            <p class="dash-card-note" id="attachmentStatus"></p>
+          </div>
           <div class="field-group points-toggle-row" id="pointsToggleRow" style="display:none;">
             <label class="points-toggle-label">
               <input type="checkbox" id="applyPointsToggle">
