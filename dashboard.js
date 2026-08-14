@@ -56,11 +56,13 @@ function renderHeader(profile) {
   const supportTag = document.getElementById('supportTag');
   const supportText = document.getElementById('supportText');
   const supportLink = document.getElementById('supportLink');
+  const bpPerks = document.getElementById('businessPoolPerks');
 
   if (profile.is_business_pool) {
     supportCard.classList.add('is-business-pool');
     supportTag.textContent = 'Business Pool';
     supportText.textContent = 'You have a dedicated human manager — reach them directly on Telegram.';
+    bpPerks.style.display = 'flex';
     supportLink.href = 'https://t.me/agenticcore_managers';
     supportLink.textContent = 'Message your manager';
   } else {
@@ -69,6 +71,7 @@ function renderHeader(profile) {
     supportText.textContent = remaining > 0
       ? `Our AI agent specialist is available on Telegram. $${remaining.toLocaleString()} more in lifetime spend unlocks Business Pool.`
       : 'Our AI agent specialist is available on Telegram.';
+    bpPerks.style.display = 'none';
     supportLink.href = 'https://t.me/agenticcore_support';
     supportLink.textContent = 'Message us on Telegram';
   }
