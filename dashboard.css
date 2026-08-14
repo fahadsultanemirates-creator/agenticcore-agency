@@ -70,6 +70,28 @@
   border-color: rgba(34, 211, 238, 0.35);
 }
 
+.bp-perks {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: var(--space-sm) 0;
+}
+
+.bp-perks li {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+  padding-left: 1.1rem;
+  position: relative;
+}
+
+.bp-perks li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--accent-cyan);
+}
+
 /* ============================================
    Tabs + panels
    ============================================ */
