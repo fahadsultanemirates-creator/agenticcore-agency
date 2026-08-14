@@ -10,6 +10,7 @@ const STATUS_LABELS = {
   awaiting_review: 'Awaiting your review',
   revision_requested: 'Revision requested',
   delivered: 'Delivered',
+  approved: 'Approved — awaiting final payment',
   pending: 'Pending',
   paid: 'Paid',
   refunded: 'Refunded'
@@ -136,7 +137,10 @@ async function renderProjectsPanel(userId) {
     projects.forEach((p) => {
       const el = document.createElement('div');
       el.className = 'project-card';
-      el.innerHTML = `
+
+      const row = document.createElement('div');
+      row.className = 'project-card-row';
+      row.innerHTML = `
         <div>
           <h4>${p.project_name || 'Untitled project'}</h4>
           <p>Started ${formatDate(p.created_at)}</p>
@@ -144,11 +148,80 @@ async function renderProjectsPanel(userId) {
         </div>
         ${statusPill(p.status)}
       `;
+      el.appendChild(row);
+
+      if (p.status === 'delivered') {
+        const actions = document.createElement('div');
+        actions.className = 'project-actions';
+
+        if (p.revisions_used < 2) {
+          const revisionBtn = document.createElement('button');
+          revisionBtn.type = 'button';
+          revisionBtn.className = 'btn btn-secondary btn-sm';
+          revisionBtn.textContent = 'Request Revision';
+          revisionBtn.addEventListener('click', () => handleRequestRevision(p.id, userId, revisionBtn));
+          actions.appendChild(revisionBtn);
+        } else {
+          const note = document.createElement('p');
+          note.className = 'revisions-note';
+          note.textContent = 'No free revisions remaining — further changes are billed separately.';
+          actions.appendChild(note);
+        }
+
+        const approveBtn = document.createElement('button');
+        approveBtn.type = 'button';
+        approveBtn.className = 'btn btn-primary btn-sm';
+        approveBtn.textContent = 'Approve & Pay Remaining';
+        approveBtn.addEventListener('click', () => handleApproveDelivery(p.id, userId, approveBtn));
+        actions.appendChild(approveBtn);
+
+        el.appendChild(actions);
+      }
+
       projectsList.appendChild(el);
     });
   } else {
     projectsEmpty.style.display = 'block';
   }
+}
+
+async function handleRequestRevision(projectId, userId, btn) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const { error } = await supabaseClient.rpc('request_project_revision', { p_project_id: projectId });
+
+  if (error) {
+    btn.disabled = false;
+    btn.textContent = original;
+    alert('Could not request a revision: ' + error.message);
+    return;
+  }
+
+  renderProjectsPanel(userId);
+}
+
+async function handleApproveDelivery(projectId, userId, btn) {
+  if (!confirm('Approve this delivery? This will start the final payment (70% of the agreed price).')) {
+    return;
+  }
+
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  const { error } = await supabaseClient.rpc('approve_project_delivery', { p_project_id: projectId });
+
+  if (error) {
+    btn.disabled = false;
+    btn.textContent = original;
+    alert('Could not approve delivery: ' + error.message);
+    return;
+  }
+
+  renderProjectsPanel(userId);
+  renderBillingPanel(userId);
 }
 
 // -------- Billing --------
