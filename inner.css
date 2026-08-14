@@ -155,6 +155,17 @@
   color: var(--text-tertiary);
 }
 
+.package-note {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  margin-top: var(--space-md);
+}
+
+.tier-card .btn {
+  width: 100%;
+  margin-top: var(--space-md);
+}
+
 @media (max-width: 860px) {
   .tier-table {
     grid-template-columns: 1fr;
