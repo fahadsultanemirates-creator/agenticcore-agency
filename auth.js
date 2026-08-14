@@ -1,5 +1,16 @@
 // AgenticCore Agency — Authentication logic
 
+// -------- Password visibility toggle (login.html, signup.html) --------
+document.querySelectorAll('.password-toggle').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.target);
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btn.classList.toggle('is-showing', !showing);
+    btn.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+  });
+});
+
 function showAuthError(el, message) {
   el.textContent = message;
   el.style.display = 'block';
@@ -87,6 +98,66 @@ if (loginForm) {
 
     if (error) {
       showAuthError(errorEl, 'Incorrect email or password.');
+      return;
+    }
+
+    window.location.href = 'dashboard.html';
+  });
+}
+
+// -------- FORGOT PASSWORD: request reset email --------
+const resetRequestForm = document.getElementById('resetRequestForm');
+if (resetRequestForm) {
+  resetRequestForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById('authError');
+    const successEl = document.getElementById('authSuccess');
+    const btn = document.getElementById('resetRequestBtn');
+    hideAuthError(errorEl);
+    successEl.style.display = 'none';
+
+    const email = document.getElementById('email').value.trim();
+    setLoading(btn, true, 'Send reset link');
+
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}${window.location.pathname.replace('reset-request.html', '')}reset-password.html`
+    });
+
+    setLoading(btn, false, 'Send reset link');
+
+    if (error) {
+      showAuthError(errorEl, error.message);
+      return;
+    }
+
+    resetRequestForm.reset();
+    // Deliberately generic -- don't reveal whether the email is registered.
+    successEl.textContent = 'If an account exists for that email, a reset link is on its way.';
+    successEl.style.display = 'block';
+  });
+}
+
+// -------- FORGOT PASSWORD: set new password (from the emailed reset link) --------
+const setNewPasswordForm = document.getElementById('setNewPasswordForm');
+if (setNewPasswordForm) {
+  setNewPasswordForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const errorEl = document.getElementById('authError');
+    const btn = document.getElementById('setNewPasswordBtn');
+    hideAuthError(errorEl);
+
+    const password = document.getElementById('password').value;
+    if (password.length < 8) {
+      showAuthError(errorEl, 'Password must be at least 8 characters.');
+      return;
+    }
+
+    setLoading(btn, true, 'Set new password');
+    const { error } = await supabaseClient.auth.updateUser({ password });
+    setLoading(btn, false, 'Set new password');
+
+    if (error) {
+      showAuthError(errorEl, error.message);
       return;
     }
 

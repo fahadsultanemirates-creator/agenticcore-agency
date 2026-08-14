@@ -67,11 +67,75 @@
   border-color: var(--accent-cyan);
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 2.75rem;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 0.3rem;
+  display: flex;
+  cursor: pointer;
+  color: var(--text-tertiary);
+}
+
+.password-toggle:hover {
+  color: var(--text-secondary);
+}
+
+.password-toggle svg {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+
+.password-toggle .icon-eye-off {
+  display: none;
+}
+
+.password-toggle.is-showing .icon-eye {
+  display: none;
+}
+
+.password-toggle.is-showing .icon-eye-off {
+  display: block;
+}
+
+.forgot-password-link {
+  text-align: right;
+  margin: -0.6rem 0 var(--space-md);
+}
+
+.forgot-password-link a {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
 .auth-error {
   display: none;
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #F87171;
+  font-size: 0.85rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--space-md);
+}
+
+.auth-success {
+  display: none;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  color: var(--accent-cyan);
   font-size: 0.85rem;
   padding: 0.7rem 0.9rem;
   border-radius: var(--radius-sm);
