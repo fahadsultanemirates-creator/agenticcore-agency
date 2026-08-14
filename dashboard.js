@@ -209,6 +209,9 @@ function initNewRequestForm(profile) {
     const tier = document.getElementById('reqTier').value;
     let description = document.getElementById('reqDescription').value.trim();
     const applyPoints = document.getElementById('applyPointsToggle').checked;
+    const attachmentInput = document.getElementById('reqAttachment');
+    const attachmentStatus = document.getElementById('attachmentStatus');
+    const file = attachmentInput.files[0];
 
     if (applyPoints) {
       description += `\n\n[Requested: apply up to ${formatMoney(profile.points_balance)} in Points toward this project.]`;
@@ -218,12 +221,33 @@ function initNewRequestForm(profile) {
     btn.disabled = true;
     btn.textContent = 'Submitting…';
 
+    let attachmentPath = null;
+    if (file) {
+      attachmentStatus.textContent = 'Uploading attachment…';
+      const path = `${profile.id}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabaseClient.storage
+        .from('request-attachments')
+        .upload(path, file);
+
+      if (uploadError) {
+        btn.disabled = false;
+        btn.textContent = 'Submit request';
+        attachmentStatus.textContent = '';
+        errorEl.textContent = 'Attachment failed to upload: ' + uploadError.message;
+        errorEl.style.display = 'block';
+        return;
+      }
+      attachmentPath = path;
+      attachmentStatus.textContent = '';
+    }
+
     const { error } = await supabaseClient.from('requests').insert({
       user_id: profile.id,
       service_category: category,
       tier,
       description,
-      status: 'awaiting_payment'
+      status: 'awaiting_payment',
+      attachment_path: attachmentPath
     });
 
     btn.disabled = false;
