@@ -270,6 +270,21 @@
   width: auto !important;
 }
 
+.dash-note {
+  border-left: 3px solid var(--accent-cyan);
+  background: rgba(34, 211, 238, 0.05);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  margin-bottom: var(--space-md);
+}
+
+.dash-note a {
+  color: var(--accent-cyan);
+  border-bottom: 1px solid rgba(34, 211, 238, 0.3);
+}
+
 .dash-error, .dash-success {
   display: none;
   font-size: 0.85rem;
