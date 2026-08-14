@@ -27,9 +27,16 @@ alter table public.requests
 -- convention (first path segment = auth.uid()) is enforced here, not
 -- just assumed client-side -- a client that tried to upload under a
 -- different user's folder would be rejected by this policy.
+--
+-- No "alter table storage.objects enable row level security" here:
+-- Supabase enables RLS on storage.objects by default in every
+-- project, and storage.objects is owned by the internal
+-- supabase_storage_admin role rather than the role a SQL Editor
+-- session runs as, so re-issuing that ALTER TABLE fails with
+-- "must be owner of table objects". CREATE POLICY itself doesn't
+-- require ownership -- Supabase grants that separately -- so the
+-- policies below still work without it.
 -- ============================================================
-
-alter table storage.objects enable row level security;
 
 create policy "request_attachments_insert_own"
   on storage.objects for insert
