@@ -46,23 +46,40 @@
         <p class="dash-card-note">1 Point = $1 of credit toward any service.</p>
       </div>
       <div class="dash-card" id="supportCard">
-        <span class="panel-tag" id="supportTag">Support</span>
-        <p class="dash-card-note" id="supportText">Loading...</p>
-        <ul class="bp-perks" id="businessPoolPerks" style="display:none;">
-          <li>20% off every service — applied automatically</li>
-          <li>A custom design package included every month</li>
-        </ul>
-        <a href="#" class="btn btn-secondary btn-sm" id="supportLink" target="_blank" rel="noopener">Message us on Telegram</a>
+        <span class="panel-tag">Support</span>
+        <p class="dash-card-note">Our AI agent specialist is available on Telegram, 24/7.</p>
+        <a href="https://t.me/agenticcore_support" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Message us on Telegram</a>
       </div>
     </div>
   </div>
 </header>
 
+<section class="bp-section">
+  <div class="container">
+    <div class="bp-card" id="bpCard">
+      <div class="bp-card-main">
+        <span class="panel-tag">Business Pool</span>
+        <div class="bp-progress-wrap" id="bpProgressWrap">
+          <div class="bp-progress-track"><div class="bp-progress-fill" id="bpProgressFill"></div></div>
+          <p class="bp-progress-text" id="bpProgressText">$0 / $5,000</p>
+        </div>
+        <p class="bp-unlocked-text" id="bpUnlockedText" style="display:none;">You're in — a dedicated human manager is handling your account.</p>
+        <a href="https://t.me/agenticcore_managers" class="btn btn-primary btn-sm" id="bpManagerBtn" target="_blank" rel="noopener" style="display:none;">Message your manager</a>
+      </div>
+      <ul class="bp-perks" id="bpPerksList">
+        <li>20% off all services — applied automatically</li>
+        <li>A dedicated human Telegram manager</li>
+        <li>A custom design package included every month</li>
+        <li>Faster delivery on every request</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
 <section class="dash-body">
   <div class="container dash-layout">
     <div class="dash-tabs" id="dashTabs" role="tablist">
       <button type="button" class="dash-tab active" data-tab="projects">My Projects</button>
-      <button type="button" class="dash-tab" data-tab="services">Services</button>
       <button type="button" class="dash-tab" data-tab="new-request">New Request</button>
       <button type="button" class="dash-tab" data-tab="billing">Billing</button>
     </div>
@@ -79,82 +96,67 @@
         <div class="project-list" id="projectsList"></div>
       </div>
 
-      <div class="dash-panel" id="panel-services">
-        <h2>Pick a service to get started</h2>
-        <div class="service-quick-list">
-          <div class="service-quick-card" data-category="Websites">
-            <h3>Websites</h3>
-            <p>From a simple page to a full platform with logins and dashboards.</p>
-            <button type="button" class="btn btn-secondary btn-sm start-request-btn" data-category="Websites">Start a request →</button>
-          </div>
-          <div class="service-quick-card" data-category="Marketing">
-            <h3>Marketing</h3>
-            <p>Full-scope marketing, delivered through AgenticCore Biz.</p>
-            <button type="button" class="btn btn-secondary btn-sm start-request-btn" data-category="Marketing">Start a request →</button>
-          </div>
-          <div class="service-quick-card" data-category="Bookkeeping & Reports">
-            <h3>Bookkeeping &amp; Reports</h3>
-            <p>Receipts, balance sheets, and profit tracking kept current.</p>
-            <button type="button" class="btn btn-secondary btn-sm start-request-btn" data-category="Bookkeeping & Reports">Start a request →</button>
-          </div>
-          <div class="service-quick-card" data-category="Audits & Feasibility Reports">
-            <h3>Audits &amp; Feasibility Reports</h3>
-            <p>Real, branded reports before you commit a dollar.</p>
-            <button type="button" class="btn btn-secondary btn-sm start-request-btn" data-category="Audits & Feasibility Reports">Start a request →</button>
-          </div>
-          <div class="service-quick-card" data-category="Custom AI Agents">
-            <h3>Custom AI Agents</h3>
-            <p>From a single task to a full framework running your business.</p>
-            <button type="button" class="btn btn-secondary btn-sm start-request-btn" data-category="Custom AI Agents">Start a request →</button>
-          </div>
-        </div>
-        <p style="margin-top:var(--space-md);"><a href="services.html" style="color:var(--accent-cyan);border-bottom:1px solid rgba(34,211,238,0.3);">See every tier &amp; expected timeframe →</a></p>
-      </div>
-
       <div class="dash-panel" id="panel-new-request">
         <h2>New Request</h2>
         <div class="dash-note">Please read our <a href="terms.html">payment and delivery policy</a> before placing a request. Prefer a fixed-price bundle? See <a href="packages.html">AgenticCore Packages</a>.</div>
         <div class="dash-error" id="requestError"></div>
         <div class="dash-success" id="requestSuccess"></div>
-        <form id="newRequestForm">
-          <div class="field-group">
-            <label for="reqCategory">Service category</label>
-            <select id="reqCategory" required>
-              <option value="">Select a category…</option>
-              <option value="Websites">Websites</option>
-              <option value="Marketing">Marketing</option>
-              <option value="Bookkeeping & Reports">Bookkeeping &amp; Reports</option>
-              <option value="Audits & Feasibility Reports">Audits &amp; Feasibility Reports</option>
-              <option value="Custom AI Agents">Custom AI Agents</option>
-            </select>
+
+        <div class="wizard" id="requestWizard">
+          <ol class="wizard-steps" id="wizardStepsIndicator">
+            <li data-step="1" class="active">1. Service</li>
+            <li data-step="2">2. Task</li>
+            <li data-step="3">3. Tier</li>
+            <li data-step="4">4. Details</li>
+            <li data-step="5">5. Submit</li>
+          </ol>
+
+          <div class="wizard-step active" data-step="1">
+            <h3>What service do you need?</h3>
+            <div class="wizard-options" id="wizardServiceOptions"></div>
           </div>
-          <div class="field-group">
-            <label for="reqTier">Tier</label>
-            <select id="reqTier" required>
-              <option value="">Select a tier…</option>
-              <option value="low">Low — fast &amp; essential</option>
-              <option value="mid">Mid — balanced &amp; customized</option>
-              <option value="top">Top — premium &amp; hands-on</option>
-            </select>
+
+          <div class="wizard-step" data-step="2">
+            <h3>Which task?</h3>
+            <div class="wizard-options" id="wizardTaskOptions"></div>
           </div>
-          <div class="field-group">
-            <label for="reqDescription">Describe what you need</label>
-            <textarea id="reqDescription" rows="5" required placeholder="Plain language is fine — no forms to fill out beyond this."></textarea>
+
+          <div class="wizard-step" data-step="3">
+            <h3>Choose a tier</h3>
+            <div class="wizard-options" id="wizardTierOptions"></div>
           </div>
-          <div class="field-group">
-            <label for="reqAttachment">Attach a file <span style="color:var(--text-tertiary);font-weight:400;">(optional — reference images, briefs, existing branding, etc.)</span></label>
-            <input type="file" id="reqAttachment" accept="image/*,.pdf,.doc,.docx">
-            <p class="dash-card-note" id="attachmentStatus"></p>
+
+          <div class="wizard-step" data-step="4">
+            <h3>Tell us what you need</h3>
+            <div class="field-group">
+              <label for="reqDescription">Describe what you need</label>
+              <textarea id="reqDescription" rows="5" placeholder="Plain language is fine — no forms to fill out beyond this."></textarea>
+            </div>
+            <div class="field-group">
+              <label for="reqAttachment">Attach a file <span style="color:var(--text-tertiary);font-weight:400;">(optional — reference images, briefs, existing branding, etc.)</span></label>
+              <input type="file" id="reqAttachment" accept="image/*,.pdf,.doc,.docx">
+              <p class="dash-card-note" id="attachmentStatus"></p>
+            </div>
+            <div class="field-group points-toggle-row" id="pointsToggleRow" style="display:none;">
+              <label class="points-toggle-label">
+                <input type="checkbox" id="applyPointsToggle">
+                Apply my AgenticCore Points to this request
+              </label>
+              <p class="dash-card-note" id="pointsToggleNote"></p>
+            </div>
           </div>
-          <div class="field-group points-toggle-row" id="pointsToggleRow" style="display:none;">
-            <label class="points-toggle-label">
-              <input type="checkbox" id="applyPointsToggle">
-              Apply my AgenticCore Points to this request
-            </label>
-            <p class="dash-card-note" id="pointsToggleNote"></p>
+
+          <div class="wizard-step" data-step="5">
+            <h3>Review &amp; submit</h3>
+            <dl class="wizard-summary-list" id="wizardSummary"></dl>
+            <button type="button" class="btn btn-primary" id="submitRequestBtn">Submit request</button>
           </div>
-          <button type="submit" class="btn btn-primary" id="submitRequestBtn">Submit request</button>
-        </form>
+
+          <div class="wizard-nav">
+            <button type="button" class="btn btn-secondary btn-sm" id="wizardBackBtn" style="display:none;">← Back</button>
+            <button type="button" class="btn btn-primary btn-sm" id="wizardNextBtn" style="display:none;">Next →</button>
+          </div>
+        </div>
       </div>
 
       <div class="dash-panel" id="panel-billing">
@@ -171,6 +173,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="supabase-client.js"></script>
 <script src="auth.js"></script>
+<script src="pricing-catalog.js"></script>
 <script src="dashboard.js"></script>
 </body>
 </html>

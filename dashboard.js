@@ -1,7 +1,5 @@
 // AgenticCore Agency — Dashboard logic
 
-const SERVICE_CATEGORIES = ['Websites', 'Marketing', 'Bookkeeping & Reports', 'Audits & Feasibility Reports', 'Custom AI Agents'];
-
 const STATUS_LABELS = {
   draft: 'Draft',
   awaiting_payment: 'Awaiting payment',
@@ -52,29 +50,30 @@ function renderHeader(profile) {
   document.getElementById('referralLinkInput').value = referralUrl;
 
   document.getElementById('pointsBalance').textContent = formatMoney(profile.points_balance);
+}
 
-  const supportCard = document.getElementById('supportCard');
-  const supportTag = document.getElementById('supportTag');
-  const supportText = document.getElementById('supportText');
-  const supportLink = document.getElementById('supportLink');
-  const bpPerks = document.getElementById('businessPoolPerks');
+// -------- Business Pool section --------
+const BUSINESS_POOL_THRESHOLD = 5000;
+
+function renderBusinessPoolSection(profile) {
+  const progressWrap = document.getElementById('bpProgressWrap');
+  const progressFill = document.getElementById('bpProgressFill');
+  const progressText = document.getElementById('bpProgressText');
+  const unlockedText = document.getElementById('bpUnlockedText');
+  const managerBtn = document.getElementById('bpManagerBtn');
 
   if (profile.is_business_pool) {
-    supportCard.classList.add('is-business-pool');
-    supportTag.textContent = 'Business Pool';
-    supportText.textContent = 'You have a dedicated human manager — reach them directly on Telegram.';
-    bpPerks.style.display = 'flex';
-    supportLink.href = 'https://t.me/agenticcore_managers';
-    supportLink.textContent = 'Message your manager';
+    progressWrap.style.display = 'none';
+    unlockedText.style.display = 'block';
+    managerBtn.style.display = 'inline-block';
   } else {
-    supportTag.textContent = 'Support';
-    const remaining = Math.max(0, 5000 - Number(profile.total_spend));
-    supportText.textContent = remaining > 0
-      ? `Our AI agent specialist is available on Telegram. $${remaining.toLocaleString()} more in lifetime spend unlocks Business Pool.`
-      : 'Our AI agent specialist is available on Telegram.';
-    bpPerks.style.display = 'none';
-    supportLink.href = 'https://t.me/agenticcore_support';
-    supportLink.textContent = 'Message us on Telegram';
+    progressWrap.style.display = 'block';
+    unlockedText.style.display = 'none';
+    managerBtn.style.display = 'none';
+    const spend = Number(profile.total_spend) || 0;
+    const pct = Math.max(0, Math.min(100, (spend / BUSINESS_POOL_THRESHOLD) * 100));
+    progressFill.style.width = pct + '%';
+    progressText.textContent = `${formatMoney(spend)} / ${formatMoney(BUSINESS_POOL_THRESHOLD)}`;
   }
 }
 
@@ -150,7 +149,7 @@ async function renderProjectsPanel(userId) {
       `;
       el.appendChild(row);
 
-      if (p.status === 'delivered') {
+      if (p.status === 'delivered' || p.status === 'awaiting_review') {
         const actions = document.createElement('div');
         actions.className = 'project-actions';
 
@@ -254,18 +253,14 @@ async function renderBillingPanel(userId) {
   }
 }
 
-// -------- Services quick list --------
-function initServicesPanel() {
-  document.querySelectorAll('.start-request-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.getElementById('reqCategory').value = btn.dataset.category;
-      switchTab('new-request');
-    });
-  });
+// -------- New Request wizard --------
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
 }
 
-// -------- New Request form --------
-function initNewRequestForm(profile) {
+function initNewRequestWizard(profile) {
   const pointsRow = document.getElementById('pointsToggleRow');
   const pointsNote = document.getElementById('pointsToggleNote');
   if (Number(profile.points_balance) > 0) {
@@ -273,16 +268,125 @@ function initNewRequestForm(profile) {
     pointsNote.textContent = `You have ${formatMoney(profile.points_balance)} in Points. Check this box and we'll apply up to that amount when your price is finalized.`;
   }
 
-  const form = document.getElementById('newRequestForm');
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+  const state = { category: null, taskType: null, tier: null };
+  let currentStep = 1;
+
+  const stepEls = document.querySelectorAll('#requestWizard .wizard-step');
+  const indicatorEls = document.querySelectorAll('#wizardStepsIndicator li');
+  const backBtn = document.getElementById('wizardBackBtn');
+  const nextBtn = document.getElementById('wizardNextBtn');
+
+  function goToStep(n) {
+    currentStep = n;
+    stepEls.forEach((el) => el.classList.toggle('active', Number(el.dataset.step) === n));
+    indicatorEls.forEach((el) => el.classList.toggle('active', Number(el.dataset.step) === n));
+    backBtn.style.display = n > 1 ? 'inline-block' : 'none';
+    nextBtn.style.display = n === 4 ? 'inline-block' : 'none';
+    if (n === 5) renderSummary();
+  }
+
+  function renderServiceOptions() {
+    const el = document.getElementById('wizardServiceOptions');
+    el.innerHTML = '';
+    PRICING_CATALOG.forEach((cat) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'wizard-option-card';
+      if (cat.category === state.category) btn.classList.add('selected');
+      btn.innerHTML = `<span>${escapeHtml(cat.label || cat.category)}</span>`;
+      btn.addEventListener('click', () => {
+        state.category = cat.category;
+        state.taskType = null;
+        state.tier = null;
+        renderServiceOptions();
+        renderTaskOptions();
+        goToStep(2);
+      });
+      el.appendChild(btn);
+    });
+  }
+
+  function renderTaskOptions() {
+    const el = document.getElementById('wizardTaskOptions');
+    el.innerHTML = '';
+    const cat = getCatalogCategory(state.category);
+    if (!cat) return;
+    cat.items.forEach((item) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'wizard-option-card';
+      if (item.name === state.taskType) btn.classList.add('selected');
+      btn.innerHTML = `<span>${escapeHtml(item.name)}</span><span class="wizard-option-price">${formatMoney(item.low)} – ${formatMoney(item.high)}</span>`;
+      btn.addEventListener('click', () => {
+        state.taskType = item.name;
+        state.tier = null;
+        renderTaskOptions();
+        renderTierOptions();
+        goToStep(3);
+      });
+      el.appendChild(btn);
+    });
+  }
+
+  function renderTierOptions() {
+    const el = document.getElementById('wizardTierOptions');
+    el.innerHTML = '';
+    const item = getCatalogItem(state.category, state.taskType);
+    if (!item) return;
+    ['low', 'mid', 'high'].forEach((tier) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'wizard-option-card';
+      if (tier === state.tier) btn.classList.add('selected');
+      btn.innerHTML = `<span>${escapeHtml(TIER_LABELS[tier])}</span><span class="wizard-option-price">${formatMoney(item[tier])}</span>`;
+      btn.addEventListener('click', () => {
+        state.tier = tier;
+        renderTierOptions();
+        goToStep(4);
+      });
+      el.appendChild(btn);
+    });
+  }
+
+  function renderSummary() {
+    const item = getCatalogItem(state.category, state.taskType);
+    const price = item ? item[state.tier] : 0;
+    const description = document.getElementById('reqDescription').value.trim();
+    const file = document.getElementById('reqAttachment').files[0];
+    const el = document.getElementById('wizardSummary');
+    el.innerHTML = `
+      <dt>Service</dt><dd>${escapeHtml(state.category)}</dd>
+      <dt>Task</dt><dd>${escapeHtml(state.taskType)}</dd>
+      <dt>Tier</dt><dd>${escapeHtml(TIER_LABELS[state.tier])}</dd>
+      <dt>Price</dt><dd>${formatMoney(price)}</dd>
+      <dt>Description</dt><dd>${escapeHtml(description) || '<em>None provided</em>'}</dd>
+      ${file ? `<dt>Attachment</dt><dd>${escapeHtml(file.name)}</dd>` : ''}
+    `;
+  }
+
+  backBtn.addEventListener('click', () => {
+    if (currentStep > 1) goToStep(currentStep - 1);
+  });
+
+  nextBtn.addEventListener('click', () => {
+    const description = document.getElementById('reqDescription').value.trim();
+    const errorEl = document.getElementById('requestError');
+    if (!description) {
+      errorEl.textContent = 'Please describe what you need before continuing.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    errorEl.style.display = 'none';
+    goToStep(5);
+  });
+
+  document.getElementById('submitRequestBtn').addEventListener('click', async () => {
     const errorEl = document.getElementById('requestError');
     const successEl = document.getElementById('requestSuccess');
     errorEl.style.display = 'none';
     successEl.style.display = 'none';
 
-    const category = document.getElementById('reqCategory').value;
-    const tier = document.getElementById('reqTier').value;
+    const item = getCatalogItem(state.category, state.taskType);
     let description = document.getElementById('reqDescription').value.trim();
     const applyPoints = document.getElementById('applyPointsToggle').checked;
     const attachmentInput = document.getElementById('reqAttachment');
@@ -319,9 +423,11 @@ function initNewRequestForm(profile) {
 
     const { error } = await supabaseClient.from('requests').insert({
       user_id: profile.id,
-      service_category: category,
-      tier,
+      service_category: state.category,
+      task_type: state.taskType,
+      tier: tierDbValue(state.tier),
       description,
+      agreed_price: item[state.tier],
       status: 'awaiting_payment',
       attachment_path: attachmentPath
     });
@@ -335,11 +441,22 @@ function initNewRequestForm(profile) {
       return;
     }
 
-    form.reset();
-    successEl.textContent = 'Request submitted — we\'ll follow up with a scoped price shortly. You can track it under My Projects.';
+    state.category = null;
+    state.taskType = null;
+    state.tier = null;
+    document.getElementById('reqDescription').value = '';
+    attachmentInput.value = '';
+    document.getElementById('applyPointsToggle').checked = false;
+    renderServiceOptions();
+    goToStep(1);
+
+    successEl.textContent = 'Request submitted — we\'ll follow up shortly. You can track it under My Projects.';
     successEl.style.display = 'block';
     renderProjectsPanel(profile.id);
   });
+
+  renderServiceOptions();
+  goToStep(1);
 }
 
 // -------- Init --------
@@ -360,9 +477,9 @@ function initNewRequestForm(profile) {
   }
 
   renderHeader(profile);
+  renderBusinessPoolSection(profile);
   initTabs();
-  initServicesPanel();
-  initNewRequestForm(profile);
+  initNewRequestWizard(profile);
   renderProjectsPanel(userId);
   renderBillingPanel(userId);
 
