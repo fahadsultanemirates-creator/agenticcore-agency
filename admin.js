@@ -52,13 +52,14 @@ async function loadAll() {
 function renderRequests(requests, profilesById) {
   const tbody = document.querySelector('#requestsTable tbody');
   if (!requests.length) {
-    tbody.innerHTML = emptyRow(5, 'No requests yet.');
+    tbody.innerHTML = emptyRow(6, 'No requests yet.');
     return;
   }
   tbody.innerHTML = requests.map((r) => `
     <tr>
       <td>${userLabel(profilesById, r.user_id)}</td>
       <td>${r.service_category}</td>
+      <td>${r.task_type || '—'}</td>
       <td>${r.tier}</td>
       <td>${r.status}</td>
       <td>${formatDate(r.created_at)}</td>
