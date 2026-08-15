@@ -11,17 +11,23 @@
 /*.html
   Cache-Control: public, max-age=0, must-revalidate
 
-# Static assets: cache for an hour instead of revalidating on every load,
-# then must-revalidate. Deliberately NOT a long/immutable cache (e.g. one
-# year) -- none of these filenames are content-hashed (main.css stays
-# main.css across every deploy), so a long immutable cache would just move
-# today's "stale index.html" bug onto CSS/JS/images instead of fixing it.
+# CSS/JS: same treatment as HTML -- always revalidate, never serve a
+# stale copy straight from the browser cache. These were previously on a
+# 1-hour max-age, which just relocated the "stale index.html" bug onto
+# CSS/JS instead of fixing it: during active development, a fix could
+# ship, get merged, and still appear broken to a tester for up to an hour
+# because their browser was silently reusing pre-fix dashboard.js/
+# dashboard.css without even checking the server. None of these filenames
+# are content-hashed (main.css stays main.css across every deploy), so
+# there's no cache-busting alternative short of revalidating on every load.
 /*.css
-  Cache-Control: public, max-age=3600, must-revalidate
+  Cache-Control: public, max-age=0, must-revalidate
 
 /*.js
-  Cache-Control: public, max-age=3600, must-revalidate
+  Cache-Control: public, max-age=0, must-revalidate
 
+# Images: unaffected by this class of bug (never gated a bugfix retest),
+# so they keep a longer cache.
 /*.jpg
   Cache-Control: public, max-age=3600, must-revalidate
 
