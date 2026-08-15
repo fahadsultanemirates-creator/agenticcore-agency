@@ -43,28 +43,56 @@ async function loadAll() {
   const profilesById = {};
   (profiles || []).forEach((p) => { profilesById[p.id] = p; });
 
-  renderRequests(requests || [], profilesById);
+  renderRequests(requests || [], projects || [], profilesById);
   renderProjects(projects || [], profilesById);
   renderBilling(billing || [], profilesById);
   renderProfiles(profiles || []);
 }
 
-function renderRequests(requests, profilesById) {
+function renderRequests(requests, projects, profilesById) {
   const tbody = document.querySelector('#requestsTable tbody');
   if (!requests.length) {
-    tbody.innerHTML = emptyRow(6, 'No requests yet.');
+    tbody.innerHTML = emptyRow(7, 'No requests yet.');
     return;
   }
-  tbody.innerHTML = requests.map((r) => `
-    <tr>
+  const requestIdsWithProjects = new Set(projects.map((p) => p.request_id));
+  tbody.innerHTML = '';
+  requests.forEach((r) => {
+    const tr = document.createElement('tr');
+    const hasProject = requestIdsWithProjects.has(r.id);
+    tr.innerHTML = `
       <td>${userLabel(profilesById, r.user_id)}</td>
       <td>${r.service_category}</td>
       <td>${r.task_type || '—'}</td>
       <td>${r.tier}</td>
       <td>${r.status}</td>
       <td>${formatDate(r.created_at)}</td>
-    </tr>
-  `).join('');
+      <td>${hasProject ? 'Project created' : '<button type="button" class="btn btn-secondary btn-sm create-project-btn">Create Project</button>'}</td>
+    `;
+    const btn = tr.querySelector('.create-project-btn');
+    if (btn) {
+      btn.addEventListener('click', async () => {
+        const defaultName = `${r.service_category}${r.task_type ? ' — ' + r.task_type : ''}`;
+        const projectName = prompt('Project name for this request:', defaultName);
+        if (projectName === null) return;
+
+        btn.disabled = true;
+        btn.textContent = 'Creating…';
+        const { error } = await supabaseClient.rpc('admin_create_project_from_request', {
+          p_request_id: r.id,
+          p_project_name: projectName
+        });
+        if (error) {
+          alert('Could not create project: ' + error.message);
+          btn.disabled = false;
+          btn.textContent = 'Create Project';
+          return;
+        }
+        loadAll();
+      });
+    }
+    tbody.appendChild(tr);
+  });
 }
 
 function renderProjects(projects, profilesById) {
