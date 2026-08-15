@@ -397,22 +397,22 @@
 }
 
 /* ============================================
-   New Request form
+   Form fields shared across dash panels (New Request, Packages)
    ============================================ */
 
-#panel-new-request .field-group {
+.dash-panel .field-group {
   margin-bottom: var(--space-md);
 }
 
-#panel-new-request label {
+.dash-panel label {
   display: block;
   font-size: 0.85rem;
   color: var(--text-secondary);
   margin-bottom: 0.4rem;
 }
 
-#panel-new-request select,
-#panel-new-request textarea {
+.dash-panel select,
+.dash-panel textarea {
   width: 100%;
   padding: 0.75rem 0.9rem;
   background: var(--bg-primary);
@@ -424,13 +424,13 @@
   transition: border-color 0.2s ease;
 }
 
-#panel-new-request select:focus,
-#panel-new-request textarea:focus {
+.dash-panel select:focus,
+.dash-panel textarea:focus {
   outline: none;
   border-color: var(--accent-cyan);
 }
 
-#panel-new-request input[type="file"] {
+.dash-panel input[type="file"] {
   width: 100%;
   padding: 0.65rem 0.9rem;
   background: var(--bg-primary);
@@ -441,7 +441,7 @@
   font-size: 0.88rem;
 }
 
-#panel-new-request input[type="file"]::file-selector-button {
+.dash-panel input[type="file"]::file-selector-button {
   background: var(--bg-panel-hover);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
@@ -453,11 +453,11 @@
   cursor: pointer;
 }
 
-#panel-new-request input[type="file"]::file-selector-button:hover {
+.dash-panel input[type="file"]::file-selector-button:hover {
   border-color: var(--accent-cyan);
 }
 
-#panel-new-request textarea {
+.dash-panel textarea {
   resize: vertical;
 }
 
