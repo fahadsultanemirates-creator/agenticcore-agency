@@ -260,34 +260,42 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-function initNewRequestWizard(profile) {
-  const pointsRow = document.getElementById('pointsToggleRow');
-  const pointsNote = document.getElementById('pointsToggleNote');
-  if (Number(profile.points_balance) > 0) {
+// Generic service->task->tier->details->submit catalog wizard, shared by
+// the New Request tab (full price) and the Packages tab's 50%-off add-on
+// flow (same steps, discounted price + a note on the order).
+function initCatalogWizard(cfg) {
+  const el = (id) => document.getElementById(id);
+  const pointsRow = cfg.pointsRowId ? el(cfg.pointsRowId) : null;
+  const pointsNote = cfg.pointsNoteId ? el(cfg.pointsNoteId) : null;
+  if (pointsRow && Number(cfg.profile.points_balance) > 0) {
     pointsRow.style.display = 'block';
-    pointsNote.textContent = `You have ${formatMoney(profile.points_balance)} in Points. Check this box and we'll apply up to that amount when your price is finalized.`;
+    pointsNote.textContent = `You have ${formatMoney(cfg.profile.points_balance)} in Points. Check this box and we'll apply up to that amount when your price is finalized.`;
   }
 
   const state = { category: null, taskType: null, tier: null };
   let currentStep = 1;
 
-  const stepEls = document.querySelectorAll('#requestWizard .wizard-step');
-  const indicatorEls = document.querySelectorAll('#wizardStepsIndicator li');
-  const backBtn = document.getElementById('wizardBackBtn');
-  const nextBtn = document.getElementById('wizardNextBtn');
+  const stepEls = document.querySelectorAll(cfg.stepsSelector);
+  const indicatorEls = document.querySelectorAll(cfg.indicatorSelector);
+  const backBtn = el(cfg.backBtnId);
+  const nextBtn = el(cfg.nextBtnId);
+
+  function priceFor(tier, item) {
+    return Math.round(item[tier] * cfg.priceMultiplier * 100) / 100;
+  }
 
   function goToStep(n) {
     currentStep = n;
-    stepEls.forEach((el) => el.classList.toggle('active', Number(el.dataset.step) === n));
-    indicatorEls.forEach((el) => el.classList.toggle('active', Number(el.dataset.step) === n));
+    stepEls.forEach((stepEl) => stepEl.classList.toggle('active', Number(stepEl.dataset.step) === n));
+    indicatorEls.forEach((indEl) => indEl.classList.toggle('active', Number(indEl.dataset.step) === n));
     backBtn.style.display = n > 1 ? 'inline-block' : 'none';
     nextBtn.style.display = n === 4 ? 'inline-block' : 'none';
     if (n === 5) renderSummary();
   }
 
   function renderServiceOptions() {
-    const el = document.getElementById('wizardServiceOptions');
-    el.innerHTML = '';
+    const optsEl = el(cfg.serviceOptionsId);
+    optsEl.innerHTML = '';
     PRICING_CATALOG.forEach((cat) => {
       const btn = document.createElement('button');
       btn.type = 'button';
@@ -302,13 +310,13 @@ function initNewRequestWizard(profile) {
         renderTaskOptions();
         goToStep(2);
       });
-      el.appendChild(btn);
+      optsEl.appendChild(btn);
     });
   }
 
   function renderTaskOptions() {
-    const el = document.getElementById('wizardTaskOptions');
-    el.innerHTML = '';
+    const optsEl = el(cfg.taskOptionsId);
+    optsEl.innerHTML = '';
     const cat = getCatalogCategory(state.category);
     if (!cat) return;
     cat.items.forEach((item) => {
@@ -316,7 +324,7 @@ function initNewRequestWizard(profile) {
       btn.type = 'button';
       btn.className = 'wizard-option-card';
       if (item.name === state.taskType) btn.classList.add('selected');
-      btn.innerHTML = `<span>${escapeHtml(item.name)}</span><span class="wizard-option-price">${formatMoney(item.low)} – ${formatMoney(item.high)}</span>`;
+      btn.innerHTML = `<span>${escapeHtml(item.name)}</span><span class="wizard-option-price">${formatMoney(priceFor('low', item))} – ${formatMoney(priceFor('high', item))}</span>`;
       btn.addEventListener('click', () => {
         state.taskType = item.name;
         state.tier = null;
@@ -324,13 +332,13 @@ function initNewRequestWizard(profile) {
         renderTierOptions();
         goToStep(3);
       });
-      el.appendChild(btn);
+      optsEl.appendChild(btn);
     });
   }
 
   function renderTierOptions() {
-    const el = document.getElementById('wizardTierOptions');
-    el.innerHTML = '';
+    const optsEl = el(cfg.tierOptionsId);
+    optsEl.innerHTML = '';
     const item = getCatalogItem(state.category, state.taskType);
     if (!item) return;
     ['low', 'mid', 'high'].forEach((tier) => {
@@ -338,27 +346,27 @@ function initNewRequestWizard(profile) {
       btn.type = 'button';
       btn.className = 'wizard-option-card';
       if (tier === state.tier) btn.classList.add('selected');
-      btn.innerHTML = `<span>${escapeHtml(TIER_LABELS[tier])}</span><span class="wizard-option-price">${formatMoney(item[tier])}</span>`;
+      btn.innerHTML = `<span>${escapeHtml(TIER_LABELS[tier])}</span><span class="wizard-option-price">${formatMoney(priceFor(tier, item))}</span>`;
       btn.addEventListener('click', () => {
         state.tier = tier;
         renderTierOptions();
         goToStep(4);
       });
-      el.appendChild(btn);
+      optsEl.appendChild(btn);
     });
   }
 
   function renderSummary() {
     const item = getCatalogItem(state.category, state.taskType);
-    const price = item ? item[state.tier] : 0;
-    const description = document.getElementById('reqDescription').value.trim();
-    const file = document.getElementById('reqAttachment').files[0];
-    const el = document.getElementById('wizardSummary');
-    el.innerHTML = `
+    const price = item ? priceFor(state.tier, item) : 0;
+    const description = el(cfg.descriptionId).value.trim();
+    const file = el(cfg.attachmentId).files[0];
+    const summaryEl = el(cfg.summaryId);
+    summaryEl.innerHTML = `
       <dt>Service</dt><dd>${escapeHtml(state.category)}</dd>
       <dt>Task</dt><dd>${escapeHtml(state.taskType)}</dd>
       <dt>Tier</dt><dd>${escapeHtml(TIER_LABELS[state.tier])}</dd>
-      <dt>Price</dt><dd>${formatMoney(price)}</dd>
+      <dt>Price</dt><dd>${formatMoney(price)}${cfg.discountNote ? ' <span style="color:var(--text-tertiary);font-size:0.8rem;">(50% off applied)</span>' : ''}</dd>
       <dt>Description</dt><dd>${escapeHtml(description) || '<em>None provided</em>'}</dd>
       ${file ? `<dt>Attachment</dt><dd>${escapeHtml(file.name)}</dd>` : ''}
     `;
@@ -369,8 +377,8 @@ function initNewRequestWizard(profile) {
   });
 
   nextBtn.addEventListener('click', () => {
-    const description = document.getElementById('reqDescription').value.trim();
-    const errorEl = document.getElementById('requestError');
+    const description = el(cfg.descriptionId).value.trim();
+    const errorEl = el(cfg.errorId);
     if (!description) {
       errorEl.textContent = 'Please describe what you need before continuing.';
       errorEl.style.display = 'block';
@@ -380,24 +388,185 @@ function initNewRequestWizard(profile) {
     goToStep(5);
   });
 
-  document.getElementById('submitRequestBtn').addEventListener('click', async () => {
-    const errorEl = document.getElementById('requestError');
-    const successEl = document.getElementById('requestSuccess');
+  el(cfg.submitBtnId).addEventListener('click', async () => {
+    const errorEl = el(cfg.errorId);
+    const successEl = el(cfg.successId);
     errorEl.style.display = 'none';
     successEl.style.display = 'none';
 
     const item = getCatalogItem(state.category, state.taskType);
-    let description = document.getElementById('reqDescription').value.trim();
-    const applyPoints = document.getElementById('applyPointsToggle').checked;
-    const attachmentInput = document.getElementById('reqAttachment');
-    const attachmentStatus = document.getElementById('attachmentStatus');
+    let description = el(cfg.descriptionId).value.trim();
+    const applyPoints = cfg.applyPointsToggleId ? el(cfg.applyPointsToggleId).checked : false;
+    const attachmentInput = el(cfg.attachmentId);
+    const attachmentStatus = el(cfg.attachmentStatusId);
     const file = attachmentInput.files[0];
 
+    if (cfg.discountNote) {
+      description += `\n\n[${cfg.discountNote}]`;
+    }
     if (applyPoints) {
-      description += `\n\n[Requested: apply up to ${formatMoney(profile.points_balance)} in Points toward this project.]`;
+      description += `\n\n[Requested: apply up to ${formatMoney(cfg.profile.points_balance)} in Points toward this project.]`;
     }
 
-    const btn = document.getElementById('submitRequestBtn');
+    const btn = el(cfg.submitBtnId);
+    const originalLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+
+    let attachmentPath = null;
+    if (file) {
+      attachmentStatus.textContent = 'Uploading attachment…';
+      const path = `${cfg.profile.id}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabaseClient.storage
+        .from('request-attachments')
+        .upload(path, file);
+
+      if (uploadError) {
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+        attachmentStatus.textContent = '';
+        errorEl.textContent = 'Attachment failed to upload: ' + uploadError.message;
+        errorEl.style.display = 'block';
+        return;
+      }
+      attachmentPath = path;
+      attachmentStatus.textContent = '';
+    }
+
+    const { error } = await supabaseClient.from('requests').insert({
+      user_id: cfg.profile.id,
+      service_category: state.category,
+      task_type: state.taskType,
+      tier: tierDbValue(state.tier),
+      description,
+      agreed_price: priceFor(state.tier, item),
+      status: 'awaiting_payment',
+      attachment_path: attachmentPath
+    });
+
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+
+    if (error) {
+      errorEl.textContent = error.message;
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    state.category = null;
+    state.taskType = null;
+    state.tier = null;
+    el(cfg.descriptionId).value = '';
+    attachmentInput.value = '';
+    if (cfg.applyPointsToggleId) el(cfg.applyPointsToggleId).checked = false;
+    renderServiceOptions();
+    goToStep(1);
+
+    successEl.textContent = cfg.successMessage;
+    successEl.style.display = 'block';
+    if (cfg.onSuccess) cfg.onSuccess();
+  });
+
+  renderServiceOptions();
+  goToStep(1);
+}
+
+function initNewRequestWizard(profile) {
+  initCatalogWizard({
+    profile,
+    stepsSelector: '#requestWizard .wizard-step',
+    indicatorSelector: '#wizardStepsIndicator li',
+    serviceOptionsId: 'wizardServiceOptions',
+    taskOptionsId: 'wizardTaskOptions',
+    tierOptionsId: 'wizardTierOptions',
+    descriptionId: 'reqDescription',
+    attachmentId: 'reqAttachment',
+    attachmentStatusId: 'attachmentStatus',
+    pointsRowId: 'pointsToggleRow',
+    pointsNoteId: 'pointsToggleNote',
+    applyPointsToggleId: 'applyPointsToggle',
+    summaryId: 'wizardSummary',
+    backBtnId: 'wizardBackBtn',
+    nextBtnId: 'wizardNextBtn',
+    submitBtnId: 'submitRequestBtn',
+    errorId: 'requestError',
+    successId: 'requestSuccess',
+    priceMultiplier: 1,
+    discountNote: null,
+    successMessage: 'Request submitted — we\'ll follow up shortly. You can track it under My Projects.',
+    onSuccess: () => renderProjectsPanel(profile.id)
+  });
+}
+
+// -------- AgenticCore Packages tab --------
+function initPackagesTab(profile) {
+  const state = { tier: null };
+  let currentStep = 1;
+
+  const stepEls = document.querySelectorAll('#packageWizard .wizard-step');
+  const indicatorEls = document.querySelectorAll('#packageStepsIndicator li');
+  const backBtn = document.getElementById('packageBackBtn');
+  const nextBtn = document.getElementById('packageNextBtn');
+
+  function goToStep(n) {
+    currentStep = n;
+    stepEls.forEach((el) => el.classList.toggle('active', Number(el.dataset.step) === n));
+    indicatorEls.forEach((el) => el.classList.toggle('active', Number(el.dataset.step) === n));
+    backBtn.style.display = n > 1 ? 'inline-block' : 'none';
+    nextBtn.style.display = n === 2 ? 'inline-block' : 'none';
+    if (n === 3) renderSummary();
+  }
+
+  function renderPackageOptions() {
+    const optsEl = document.getElementById('packageOptions');
+    optsEl.innerHTML = '';
+    AGENTICCORE_PACKAGES.forEach((pkg) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'wizard-option-card';
+      if (pkg.tier === state.tier) btn.classList.add('selected');
+      btn.innerHTML = `<span>${escapeHtml(pkg.label)}</span><span class="wizard-option-price">${formatMoney(pkg.price)}</span>`;
+      btn.addEventListener('click', () => {
+        state.tier = pkg.tier;
+        renderPackageOptions();
+        goToStep(2);
+      });
+      optsEl.appendChild(btn);
+    });
+  }
+
+  function renderSummary() {
+    const pkg = AGENTICCORE_PACKAGES.find((p) => p.tier === state.tier);
+    const description = document.getElementById('pkgDescription').value.trim();
+    const file = document.getElementById('pkgAttachment').files[0];
+    document.getElementById('packageSummary').innerHTML = `
+      <dt>Package</dt><dd>${escapeHtml(pkg.label)}</dd>
+      <dt>Price</dt><dd>${formatMoney(pkg.price)}</dd>
+      <dt>Description</dt><dd>${escapeHtml(description) || '<em>None provided</em>'}</dd>
+      ${file ? `<dt>Attachment</dt><dd>${escapeHtml(file.name)}</dd>` : ''}
+    `;
+  }
+
+  backBtn.addEventListener('click', () => {
+    if (currentStep > 1) goToStep(currentStep - 1);
+  });
+
+  nextBtn.addEventListener('click', () => goToStep(3));
+
+  document.getElementById('submitPackageBtn').addEventListener('click', async () => {
+    const errorEl = document.getElementById('packageError');
+    const successEl = document.getElementById('packageSuccess');
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    const pkg = AGENTICCORE_PACKAGES.find((p) => p.tier === state.tier);
+    const description = document.getElementById('pkgDescription').value.trim();
+    const attachmentInput = document.getElementById('pkgAttachment');
+    const attachmentStatus = document.getElementById('pkgAttachmentStatus');
+    const file = attachmentInput.files[0];
+
+    const btn = document.getElementById('submitPackageBtn');
+    const originalLabel = btn.textContent;
     btn.disabled = true;
     btn.textContent = 'Submitting…';
 
@@ -411,7 +580,7 @@ function initNewRequestWizard(profile) {
 
       if (uploadError) {
         btn.disabled = false;
-        btn.textContent = 'Submit request';
+        btn.textContent = originalLabel;
         attachmentStatus.textContent = '';
         errorEl.textContent = 'Attachment failed to upload: ' + uploadError.message;
         errorEl.style.display = 'block';
@@ -423,17 +592,16 @@ function initNewRequestWizard(profile) {
 
     const { error } = await supabaseClient.from('requests').insert({
       user_id: profile.id,
-      service_category: state.category,
-      task_type: state.taskType,
-      tier: tierDbValue(state.tier),
-      description,
-      agreed_price: item[state.tier],
+      service_category: 'AgenticCore Package',
+      tier: pkg.tier,
+      description: `${pkg.label} package order — priority handling, no additional scoping needed.${description ? ' ' + description : ''}`,
+      agreed_price: pkg.price,
       status: 'awaiting_payment',
       attachment_path: attachmentPath
     });
 
     btn.disabled = false;
-    btn.textContent = 'Submit request';
+    btn.textContent = originalLabel;
 
     if (error) {
       errorEl.textContent = error.message;
@@ -441,22 +609,63 @@ function initNewRequestWizard(profile) {
       return;
     }
 
-    state.category = null;
-    state.taskType = null;
     state.tier = null;
-    document.getElementById('reqDescription').value = '';
+    document.getElementById('pkgDescription').value = '';
     attachmentInput.value = '';
-    document.getElementById('applyPointsToggle').checked = false;
-    renderServiceOptions();
+    renderPackageOptions();
     goToStep(1);
 
-    successEl.textContent = 'Request submitted — we\'ll follow up shortly. You can track it under My Projects.';
+    successEl.textContent = 'Package order submitted — you can now add extra services at 50% off below, and track your order under My Projects.';
     successEl.style.display = 'block';
+    unlockAddonSection(profile);
     renderProjectsPanel(profile.id);
   });
 
-  renderServiceOptions();
+  renderPackageOptions();
   goToStep(1);
+}
+
+let addonInitialized = false;
+function unlockAddonSection(profile) {
+  document.getElementById('addonSection').style.display = 'block';
+  document.getElementById('addonLockedNote').style.display = 'none';
+  if (addonInitialized) return;
+  addonInitialized = true;
+  initCatalogWizard({
+    profile,
+    stepsSelector: '#addonWizard .wizard-step',
+    indicatorSelector: '#addonStepsIndicator li',
+    serviceOptionsId: 'addonServiceOptions',
+    taskOptionsId: 'addonTaskOptions',
+    tierOptionsId: 'addonTierOptions',
+    descriptionId: 'addonDescription',
+    attachmentId: 'addonAttachment',
+    attachmentStatusId: 'addonAttachmentStatus',
+    summaryId: 'addonSummary',
+    backBtnId: 'addonBackBtn',
+    nextBtnId: 'addonNextBtn',
+    submitBtnId: 'submitAddonBtn',
+    errorId: 'addonError',
+    successId: 'addonSuccess',
+    priceMultiplier: 0.5,
+    discountNote: 'Active AgenticCore Package client — 50% off applied',
+    successMessage: 'Add-on request submitted at 50% off — you can track it under My Projects.',
+    onSuccess: () => renderProjectsPanel(profile.id)
+  });
+}
+
+async function initPackagesPanel(profile) {
+  initPackagesTab(profile);
+
+  const { data: pastPackages } = await supabaseClient
+    .from('requests')
+    .select('id')
+    .eq('user_id', profile.id)
+    .eq('service_category', 'AgenticCore Package');
+
+  if (pastPackages && pastPackages.length) {
+    unlockAddonSection(profile);
+  }
 }
 
 // -------- Init --------
@@ -480,6 +689,7 @@ function initNewRequestWizard(profile) {
   renderBusinessPoolSection(profile);
   initTabs();
   initNewRequestWizard(profile);
+  initPackagesPanel(profile);
   renderProjectsPanel(userId);
   renderBillingPanel(userId);
 

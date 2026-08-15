@@ -81,6 +81,7 @@
     <div class="dash-tabs" id="dashTabs" role="tablist">
       <button type="button" class="dash-tab active" data-tab="projects">My Projects</button>
       <button type="button" class="dash-tab" data-tab="new-request">New Request</button>
+      <button type="button" class="dash-tab" data-tab="packages">Packages</button>
       <button type="button" class="dash-tab" data-tab="billing">Billing</button>
     </div>
 
@@ -157,6 +158,108 @@
             <button type="button" class="btn btn-primary btn-sm" id="wizardNextBtn" style="display:none;">Next →</button>
           </div>
         </div>
+      </div>
+
+      <div class="dash-panel" id="panel-packages">
+        <h2>AgenticCore Packages</h2>
+        <div class="dash-note">Fixed-price bundles — every tier includes the exact same deliverables, priced only by execution quality. Every package includes 50% off any additional service. <a href="packages.html">See full package details →</a></div>
+        <div class="dash-error" id="packageError"></div>
+        <div class="dash-success" id="packageSuccess"></div>
+
+        <div class="wizard" id="packageWizard">
+          <ol class="wizard-steps" id="packageStepsIndicator">
+            <li data-step="1" class="active">1. Package</li>
+            <li data-step="2">2. Details</li>
+            <li data-step="3">3. Submit</li>
+          </ol>
+
+          <div class="wizard-step active" data-step="1">
+            <h3>Pick a package</h3>
+            <div class="wizard-options" id="packageOptions"></div>
+          </div>
+
+          <div class="wizard-step" data-step="2">
+            <h3>Tell us what you need</h3>
+            <div class="field-group">
+              <label for="pkgDescription">Describe what you need</label>
+              <textarea id="pkgDescription" rows="5" placeholder="Business name, branding direction, what the landing page/socials/reports should cover, etc."></textarea>
+            </div>
+            <div class="field-group">
+              <label for="pkgAttachment">Attach a file <span style="color:var(--text-tertiary);font-weight:400;">(optional — reference images, briefs, existing branding, etc.)</span></label>
+              <input type="file" id="pkgAttachment" accept="image/*,.pdf,.doc,.docx">
+              <p class="dash-card-note" id="pkgAttachmentStatus"></p>
+            </div>
+          </div>
+
+          <div class="wizard-step" data-step="3">
+            <h3>Review &amp; submit</h3>
+            <dl class="wizard-summary-list" id="packageSummary"></dl>
+            <button type="button" class="btn btn-primary" id="submitPackageBtn">Submit package order</button>
+          </div>
+
+          <div class="wizard-nav">
+            <button type="button" class="btn btn-secondary btn-sm" id="packageBackBtn" style="display:none;">← Back</button>
+            <button type="button" class="btn btn-primary btn-sm" id="packageNextBtn" style="display:none;">Next →</button>
+          </div>
+        </div>
+
+        <div id="addonSection" style="display:none;">
+          <h2 style="margin-top:var(--space-xl);">Add a service at 50% off</h2>
+          <div class="dash-note">Active AgenticCore Package clients get 50% off any additional service below.</div>
+          <div class="dash-error" id="addonError"></div>
+          <div class="dash-success" id="addonSuccess"></div>
+
+          <div class="wizard" id="addonWizard">
+            <ol class="wizard-steps" id="addonStepsIndicator">
+              <li data-step="1" class="active">1. Service</li>
+              <li data-step="2">2. Task</li>
+              <li data-step="3">3. Tier</li>
+              <li data-step="4">4. Details</li>
+              <li data-step="5">5. Submit</li>
+            </ol>
+
+            <div class="wizard-step active" data-step="1">
+              <h3>What service do you need?</h3>
+              <div class="wizard-options" id="addonServiceOptions"></div>
+            </div>
+
+            <div class="wizard-step" data-step="2">
+              <h3>Which task?</h3>
+              <div class="wizard-options" id="addonTaskOptions"></div>
+            </div>
+
+            <div class="wizard-step" data-step="3">
+              <h3>Choose a tier</h3>
+              <div class="wizard-options" id="addonTierOptions"></div>
+            </div>
+
+            <div class="wizard-step" data-step="4">
+              <h3>Tell us what you need</h3>
+              <div class="field-group">
+                <label for="addonDescription">Describe what you need</label>
+                <textarea id="addonDescription" rows="5"></textarea>
+              </div>
+              <div class="field-group">
+                <label for="addonAttachment">Attach a file <span style="color:var(--text-tertiary);font-weight:400;">(optional)</span></label>
+                <input type="file" id="addonAttachment" accept="image/*,.pdf,.doc,.docx">
+                <p class="dash-card-note" id="addonAttachmentStatus"></p>
+              </div>
+            </div>
+
+            <div class="wizard-step" data-step="5">
+              <h3>Review &amp; submit</h3>
+              <dl class="wizard-summary-list" id="addonSummary"></dl>
+              <button type="button" class="btn btn-primary" id="submitAddonBtn">Submit at 50% off</button>
+            </div>
+
+            <div class="wizard-nav">
+              <button type="button" class="btn btn-secondary btn-sm" id="addonBackBtn" style="display:none;">← Back</button>
+              <button type="button" class="btn btn-primary btn-sm" id="addonNextBtn" style="display:none;">Next →</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="dash-empty" id="addonLockedNote">Submit a package order above to unlock 50% off additional services.</p>
       </div>
 
       <div class="dash-panel" id="panel-billing">
