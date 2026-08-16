@@ -35,6 +35,12 @@ export interface HandleMessageParams {
   userMessage: string;
   openRouterApiKey: string;
   model?: string;
+  // Optional signal from the transport layer (Telegram's per-user
+  // language_code, or the browser's navigator.language) -- not a
+  // default, just an extra hint appended to the system prompt so the
+  // model has something to go on before the visitor's own words give it
+  // away (e.g. the very first "/start" on Telegram).
+  languageHint?: string;
 }
 
 export interface HandleMessageResult {
@@ -197,7 +203,7 @@ async function callOpenRouter(
 }
 
 export async function handleIncomingMessage(params: HandleMessageParams): Promise<HandleMessageResult> {
-  const { supabaseAdmin, channel, externalId, userMessage, openRouterApiKey, model } = params;
+  const { supabaseAdmin, channel, externalId, userMessage, openRouterApiKey, model, languageHint } = params;
 
   const conversation = await findOrCreateConversation(supabaseAdmin, channel, externalId);
 
@@ -207,8 +213,12 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
 
   const history = await getRecentMessages(supabaseAdmin, conversation.id);
 
+  const systemPrompt = languageHint
+    ? `${BUSINESS_KNOWLEDGE_PROMPT}\n\n(Platform hint, not a rule: this visitor's device/client language looks like "${languageHint}". Use it only if their own message gives you no better signal -- their actual words always win.)`
+    : BUSINESS_KNOWLEDGE_PROMPT;
+
   const messages = [
-    { role: 'system', content: BUSINESS_KNOWLEDGE_PROMPT },
+    { role: 'system', content: systemPrompt },
     ...history.map((m) => ({ role: m.role, content: m.content })),
     { role: 'user', content: userMessage }
   ];
