@@ -110,6 +110,14 @@ export const AGENTICCORE_PACKAGES = [
   { label: 'AgenticCore High', price: 600 }
 ];
 
+// Same deliverables at every package tier -- only execution quality
+// differs. Kept in sync with packages.js's PACKAGE_DELIVERABLES constant.
+export const PACKAGE_DELIVERABLES =
+  'Single landing page website, 5 social media posts, 3 branded documents ' +
+  '(client choice of business card, receipt, letterhead, or similar), a ' +
+  '10-page business brochure PDF, and an all-in-one strategy report PDF ' +
+  '(feasibility snapshot, marketing roadmap, competitive landscape).';
+
 function renderPricingTable(): string {
   return PRICING_CATALOG.map((cat) => {
     const lines = cat.items
@@ -144,7 +152,8 @@ rounds; changes beyond that are billed separately.
 AGENTICCORE BUNDLE PACKAGES (flat price, same deliverables at every tier —
 quality/execution is the only difference between them)
 ${renderPackagesTable()}
-Every package includes 50% off any additional service ordered alongside it.
+Every package includes: ${PACKAGE_DELIVERABLES}
+Every package also includes 50% off any additional service ordered alongside it.
 
 DELIVERY & BILLING POLICY
 - Simple services are typically delivered within 24 hours; heavier builds
