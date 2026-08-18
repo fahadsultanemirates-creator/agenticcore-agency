@@ -103,7 +103,38 @@
         <div class="dash-error" id="requestError"></div>
         <div class="dash-success" id="requestSuccess"></div>
 
-        <div class="wizard" id="requestWizard">
+        <div class="mode-toggle" id="newRequestModeToggle" role="tablist">
+          <button type="button" class="mode-toggle-btn active" data-mode="forge">💬 Chat with Forge</button>
+          <button type="button" class="mode-toggle-btn" data-mode="wizard">📋 Step-by-step</button>
+        </div>
+
+        <div id="forgeMode">
+          <div class="forge-chat" id="forgeChat">
+            <div class="forge-chat-messages" id="forgeChatMessages" aria-live="polite"></div>
+            <form class="forge-chat-form" id="forgeChatForm">
+              <input type="text" id="forgeChatInput" class="forge-chat-input" placeholder="Tell Forge what you need…" autocomplete="off" maxlength="4000">
+              <button type="submit" class="forge-chat-send" id="forgeChatSend" aria-label="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              </button>
+            </form>
+          </div>
+
+          <div class="forge-review-card" id="forgeReviewCard" style="display:none;">
+            <h3>Review &amp; submit</h3>
+            <dl class="wizard-summary-list" id="forgeReviewSummary"></dl>
+            <div class="field-group">
+              <label for="forgeAttachment">Attach a file <span style="color:var(--text-tertiary);font-weight:400;">(optional — reference images, briefs, existing branding, etc.)</span></label>
+              <input type="file" id="forgeAttachment" accept="image/*,.pdf,.doc,.docx">
+              <p class="dash-card-note" id="forgeAttachmentStatus"></p>
+            </div>
+            <div class="wizard-nav">
+              <button type="button" class="btn btn-secondary btn-sm" id="forgeKeepChattingBtn">← Keep chatting</button>
+              <button type="button" class="btn btn-primary" id="forgeSubmitBtn">Submit request</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="wizard" id="requestWizard" style="display:none;">
           <ol class="wizard-steps" id="wizardStepsIndicator">
             <li data-step="1" class="active">1. Service</li>
             <li data-step="2">2. Task</li>

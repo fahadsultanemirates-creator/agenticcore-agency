@@ -1,16 +1,20 @@
-// AgenticCore Agency — shared front-desk bot logic, used by both the
-// homepage widget and Telegram Edge Functions. Channel-agnostic on
-// purpose: it takes plain text in, returns plain text out, and knows
-// nothing about HTTP requests or Telegram updates. That split is also
-// what keeps a future voice layer (STT before this, TTS after) from
-// requiring a rewrite -- it would wrap this function, not replace it.
+// AgenticCore Agency — shared bot logic. handleIncomingMessage() backs
+// the two front-desk bots (homepage widget + Telegram); handleForgeMessage()
+// (bottom of file) backs Forge, the dashboard's New Request project-setup
+// agent. Both share the same low-level helpers (conversation lookup,
+// rate limiting, the OpenRouter call itself) since the request/response
+// shape is identical -- only the system prompt and the JSON schema
+// differ per persona. Channel-agnostic on purpose: takes plain text in,
+// returns plain text (or structured fields) out, knows nothing about
+// HTTP requests or Telegram updates -- what would let a future voice
+// layer wrap this instead of requiring a rewrite.
 
-import { BUSINESS_KNOWLEDGE_PROMPT } from './business-knowledge.ts';
+import { BUSINESS_KNOWLEDGE_PROMPT, FORGE_SYSTEM_PROMPT, PRICING_CATALOG, CATALOG_CATEGORY_NAMES } from './business-knowledge.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseAdmin = any;
 
-export type Channel = 'widget' | 'telegram';
+export type Channel = 'widget' | 'telegram' | 'forge';
 
 export interface BotConversation {
   id: string;
@@ -170,23 +174,25 @@ interface ParsedReply {
   uncertain: boolean;
 }
 
-async function callOpenRouter(
+// deno-lint-ignore no-explicit-any
+async function callOpenRouter<T>(
   apiKey: string,
   model: string,
-  messages: { role: string; content: string }[]
-): Promise<ParsedReply> {
+  messages: { role: string; content: string }[],
+  jsonSchema: Record<string, any>
+): Promise<T> {
   const resp = await fetch(OPENROUTER_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': 'https://agenticcore.agency',
-      'X-Title': 'AgenticCore Front-Desk Bot'
+      'X-Title': 'AgenticCore Bot'
     },
     body: JSON.stringify({
       model,
       messages,
-      response_format: { type: 'json_schema', json_schema: REPLY_JSON_SCHEMA },
+      response_format: { type: 'json_schema', json_schema: jsonSchema },
       temperature: 0.4
     })
   });
@@ -199,7 +205,7 @@ async function callOpenRouter(
   const data = await resp.json();
   const content = data?.choices?.[0]?.message?.content;
   if (!content) throw new Error('OpenRouter response missing message content');
-  return JSON.parse(content) as ParsedReply;
+  return JSON.parse(content) as T;
 }
 
 export async function handleIncomingMessage(params: HandleMessageParams): Promise<HandleMessageResult> {
@@ -225,7 +231,7 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
 
   let parsed: ParsedReply;
   try {
-    parsed = await callOpenRouter(openRouterApiKey, model || DEFAULT_MODEL, messages);
+    parsed = await callOpenRouter<ParsedReply>(openRouterApiKey, model || DEFAULT_MODEL, messages, REPLY_JSON_SCHEMA);
   } catch (err) {
     console.error('OpenRouter call failed:', err);
     return { reply: GENERIC_ERROR_MESSAGE, needsHuman: false };
@@ -260,4 +266,158 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
     .eq('id', conversation.id);
 
   return { reply: parsed.reply, needsHuman };
+}
+
+// ============================================================
+// Forge -- the dashboard's New Request project-setup agent. Shares
+// findOrCreateConversation/getRecentMessages/isRateLimited/callOpenRouter
+// above; has its own system prompt, JSON schema, and result shape since
+// its job (extract a structured request) isn't the front-desk bots' job
+// (answer questions, decide on a human handoff).
+// ============================================================
+
+export interface HandleForgeMessageParams {
+  supabaseAdmin: SupabaseAdmin;
+  // The authenticated dashboard user's own id, resolved server-side by
+  // forge-chat from the caller's real session -- never client-supplied.
+  // Doubles as external_id, so persistent memory across sessions falls
+  // out of the existing schema for free.
+  userId: string;
+  userMessage: string;
+  openRouterApiKey: string;
+  model?: string;
+}
+
+export interface ForgeResult {
+  reply: string;
+  // Empty string in all four until readyToSubmit is true -- Forge only
+  // hands over a complete, validated set together, once.
+  serviceCategory: string;
+  taskType: string;
+  tier: '' | 'low' | 'mid' | 'high';
+  descriptionSummary: string;
+  readyToSubmit: boolean;
+  rateLimited?: boolean;
+}
+
+const FORGE_JSON_SCHEMA = {
+  name: 'forge_project_setup',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      reply: {
+        type: 'string',
+        description: "Forge's response to the client, written entirely in their own language."
+      },
+      detected_language: { type: 'string' },
+      service_category: {
+        type: 'string',
+        enum: [...CATALOG_CATEGORY_NAMES, ''],
+        description: 'Exact catalog category name once determined together with task_type/tier/description_summary, else empty string.'
+      },
+      task_type: {
+        type: 'string',
+        description: 'Exact catalog item name (verbatim, within service_category) once determined, else empty string.'
+      },
+      tier: {
+        type: 'string',
+        enum: ['low', 'mid', 'high', ''],
+        description: 'Once determined, else empty string.'
+      },
+      description_summary: {
+        type: 'string',
+        description: "Forge's own 2-4 sentence synthesized project brief once ready, else empty string."
+      },
+      ready_to_submit: {
+        type: 'boolean',
+        description: 'True only once service_category, task_type, tier, and description_summary are ALL confidently set together.'
+      }
+    },
+    required: ['reply', 'detected_language', 'service_category', 'task_type', 'tier', 'description_summary', 'ready_to_submit'],
+    additionalProperties: false
+  }
+};
+
+interface ParsedForgeReply {
+  reply: string;
+  detected_language: string;
+  service_category: string;
+  task_type: string;
+  tier: string;
+  description_summary: string;
+  ready_to_submit: boolean;
+}
+
+// Never trust the model's own ready_to_submit at face value -- a
+// hallucinated category/task_type pairing (or a tier outside the real
+// three) should never reach the frontend's review-and-submit card.
+function isValidForgeExtraction(serviceCategory: string, taskType: string, tier: string, descriptionSummary: string): boolean {
+  const category = PRICING_CATALOG.find((cat) => cat.category === serviceCategory);
+  if (!category) return false;
+  if (!category.items.some((item) => item.name === taskType)) return false;
+  if (!['low', 'mid', 'high'].includes(tier)) return false;
+  if (descriptionSummary.trim() === '') return false;
+  return true;
+}
+
+export async function handleForgeMessage(params: HandleForgeMessageParams): Promise<ForgeResult> {
+  const { supabaseAdmin, userId, userMessage, openRouterApiKey, model } = params;
+
+  const emptyExtraction = { serviceCategory: '', taskType: '', tier: '' as const, descriptionSummary: '', readyToSubmit: false };
+
+  const conversation = await findOrCreateConversation(supabaseAdmin, 'forge', userId);
+
+  if (await isRateLimited(supabaseAdmin, conversation.id)) {
+    return { reply: RATE_LIMIT_MESSAGE, ...emptyExtraction, rateLimited: true };
+  }
+
+  const history = await getRecentMessages(supabaseAdmin, conversation.id);
+
+  const messages = [
+    { role: 'system', content: FORGE_SYSTEM_PROMPT },
+    ...history.map((m) => ({ role: m.role, content: m.content })),
+    { role: 'user', content: userMessage }
+  ];
+
+  let parsed: ParsedForgeReply;
+  try {
+    parsed = await callOpenRouter<ParsedForgeReply>(openRouterApiKey, model || DEFAULT_MODEL, messages, FORGE_JSON_SCHEMA);
+  } catch (err) {
+    console.error('Forge OpenRouter call failed:', err);
+    return { reply: GENERIC_ERROR_MESSAGE, ...emptyExtraction };
+  }
+
+  const readyToSubmit =
+    Boolean(parsed.ready_to_submit) &&
+    isValidForgeExtraction(parsed.service_category, parsed.task_type, parsed.tier, parsed.description_summary);
+
+  await supabaseAdmin.from('bot_messages').insert([
+    {
+      conversation_id: conversation.id,
+      role: 'user',
+      content: userMessage,
+      detected_language: parsed.detected_language || null
+    },
+    {
+      conversation_id: conversation.id,
+      role: 'assistant',
+      content: parsed.reply,
+      detected_language: parsed.detected_language || null
+    }
+  ]);
+
+  await supabaseAdmin
+    .from('bot_conversations')
+    .update({ language: parsed.detected_language || conversation.language })
+    .eq('id', conversation.id);
+
+  return {
+    reply: parsed.reply,
+    serviceCategory: readyToSubmit ? parsed.service_category : '',
+    taskType: readyToSubmit ? parsed.task_type : '',
+    tier: readyToSubmit ? (parsed.tier as 'low' | 'mid' | 'high') : '',
+    descriptionSummary: readyToSubmit ? parsed.description_summary : '',
+    readyToSubmit
+  };
 }
