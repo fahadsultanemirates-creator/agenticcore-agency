@@ -260,6 +260,42 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// Shared by the manual wizard, the Packages tab's 50%-off add-on flow,
+// and Forge's review-and-submit card -- one insert path so nothing
+// downstream (admin panel, billing) needs to know or care which of the
+// three actually produced a given request.
+async function submitCatalogRequest({ profile, category, taskType, tier, description, agreedPrice, file, onAttachmentStatus }) {
+  let attachmentPath = null;
+  if (file) {
+    if (onAttachmentStatus) onAttachmentStatus('Uploading attachment…');
+    const path = `${profile.id}/${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabaseClient.storage
+      .from('request-attachments')
+      .upload(path, file);
+
+    if (uploadError) {
+      if (onAttachmentStatus) onAttachmentStatus('');
+      return { error: 'Attachment failed to upload: ' + uploadError.message };
+    }
+    attachmentPath = path;
+    if (onAttachmentStatus) onAttachmentStatus('');
+  }
+
+  const { error } = await supabaseClient.from('requests').insert({
+    user_id: profile.id,
+    service_category: category,
+    task_type: taskType,
+    tier: tierDbValue(tier),
+    description,
+    agreed_price: agreedPrice,
+    status: 'awaiting_payment',
+    attachment_path: attachmentPath
+  });
+
+  if (error) return { error: error.message };
+  return { success: true };
+}
+
 // Generic service->task->tier->details->submit catalog wizard, shared by
 // the New Request tab (full price) and the Packages tab's 50%-off add-on
 // flow (same steps, discounted price + a note on the order).
@@ -413,42 +449,22 @@ function initCatalogWizard(cfg) {
     btn.disabled = true;
     btn.textContent = 'Submitting…';
 
-    let attachmentPath = null;
-    if (file) {
-      attachmentStatus.textContent = 'Uploading attachment…';
-      const path = `${cfg.profile.id}/${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabaseClient.storage
-        .from('request-attachments')
-        .upload(path, file);
-
-      if (uploadError) {
-        btn.disabled = false;
-        btn.textContent = originalLabel;
-        attachmentStatus.textContent = '';
-        errorEl.textContent = 'Attachment failed to upload: ' + uploadError.message;
-        errorEl.style.display = 'block';
-        return;
-      }
-      attachmentPath = path;
-      attachmentStatus.textContent = '';
-    }
-
-    const { error } = await supabaseClient.from('requests').insert({
-      user_id: cfg.profile.id,
-      service_category: state.category,
-      task_type: state.taskType,
-      tier: tierDbValue(state.tier),
+    const result = await submitCatalogRequest({
+      profile: cfg.profile,
+      category: state.category,
+      taskType: state.taskType,
+      tier: state.tier,
       description,
-      agreed_price: priceFor(state.tier, item),
-      status: 'awaiting_payment',
-      attachment_path: attachmentPath
+      agreedPrice: priceFor(state.tier, item),
+      file,
+      onAttachmentStatus: (msg) => { attachmentStatus.textContent = msg; }
     });
 
     btn.disabled = false;
     btn.textContent = originalLabel;
 
-    if (error) {
-      errorEl.textContent = error.message;
+    if (result.error) {
+      errorEl.textContent = result.error;
       errorEl.style.display = 'block';
       return;
     }
@@ -668,6 +684,196 @@ async function initPackagesPanel(profile) {
   }
 }
 
+// -------- Forge: New Request project-setup agent --------
+// SUPABASE_URL comes from supabase-client.js, loaded before this file --
+// same top-level-script-scope sharing dashboard.js already relies on for
+// `supabaseClient` itself.
+const FORGE_ENDPOINT = `${SUPABASE_URL}/functions/v1/forge-chat`;
+
+async function callForgeChat(accessToken, payload) {
+  const resp = await fetch(FORGE_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}));
+    throw new Error(body.error || `Request failed (${resp.status})`);
+  }
+  return resp.json();
+}
+
+function appendForgeMessage(container, role, text) {
+  const el = document.createElement('div');
+  el.className = `forge-chat-message forge-chat-message-${role}`;
+  el.textContent = text;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+  return el;
+}
+
+function appendForgeTyping(container) {
+  const el = document.createElement('div');
+  el.className = 'forge-chat-typing';
+  el.id = 'forgeChatTyping';
+  el.innerHTML = '<span></span><span></span><span></span>';
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeForgeTyping() {
+  const el = document.getElementById('forgeChatTyping');
+  if (el) el.remove();
+}
+
+function initNewRequestModeToggle() {
+  const buttons = document.querySelectorAll('.mode-toggle-btn');
+  const forgeMode = document.getElementById('forgeMode');
+  const wizard = document.getElementById('requestWizard');
+  buttons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      buttons.forEach((b) => b.classList.toggle('active', b === btn));
+      const mode = btn.dataset.mode;
+      forgeMode.style.display = mode === 'forge' ? 'block' : 'none';
+      wizard.style.display = mode === 'wizard' ? 'block' : 'none';
+    });
+  });
+}
+
+async function initForgeChat(profile) {
+  const messagesEl = document.getElementById('forgeChatMessages');
+  const form = document.getElementById('forgeChatForm');
+  const input = document.getElementById('forgeChatInput');
+  const sendBtn = document.getElementById('forgeChatSend');
+  const reviewCard = document.getElementById('forgeReviewCard');
+  const reviewSummary = document.getElementById('forgeReviewSummary');
+  const attachmentInput = document.getElementById('forgeAttachment');
+  const attachmentStatus = document.getElementById('forgeAttachmentStatus');
+  const submitBtn = document.getElementById('forgeSubmitBtn');
+  const errorEl = document.getElementById('requestError');
+  const successEl = document.getElementById('requestSuccess');
+
+  let sending = false;
+  let currentExtraction = null;
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  const accessToken = session ? session.access_token : null;
+
+  if (!accessToken) {
+    appendForgeMessage(messagesEl, 'assistant', 'Could not start a Forge session — please refresh the page.');
+    input.disabled = true;
+    sendBtn.disabled = true;
+    return;
+  }
+
+  const GREETING = "Let's set up your project — tell me what you need, and I'll help you figure out the right service, task, and tier.";
+  try {
+    const { messages } = await callForgeChat(accessToken, { action: 'history' });
+    if (messages && messages.length) {
+      messages.forEach((m) => appendForgeMessage(messagesEl, m.role, m.content));
+    } else {
+      appendForgeMessage(messagesEl, 'assistant', GREETING);
+    }
+  } catch (e) {
+    appendForgeMessage(messagesEl, 'assistant', GREETING);
+  }
+
+  function renderReviewCard(extraction) {
+    const item = getCatalogItem(extraction.serviceCategory, extraction.taskType);
+    const price = item ? item[extraction.tier] : null;
+    reviewSummary.innerHTML = `
+      <dt>Service</dt><dd>${escapeHtml(extraction.serviceCategory)}</dd>
+      <dt>Task</dt><dd>${escapeHtml(extraction.taskType)}</dd>
+      <dt>Tier</dt><dd>${escapeHtml(TIER_LABELS[extraction.tier] || extraction.tier)}</dd>
+      <dt>Price</dt><dd>${price != null ? formatMoney(price) : '—'}</dd>
+      <dt>Description</dt><dd>${escapeHtml(extraction.descriptionSummary)}</dd>
+    `;
+    reviewCard.style.display = 'block';
+    reviewCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || sending) return;
+
+    appendForgeMessage(messagesEl, 'user', text);
+    input.value = '';
+    sending = true;
+    input.disabled = true;
+    appendForgeTyping(messagesEl);
+
+    try {
+      const result = await callForgeChat(accessToken, { action: 'message', message: text });
+      removeForgeTyping();
+      appendForgeMessage(messagesEl, 'assistant', result.reply);
+      if (result.readyToSubmit) {
+        currentExtraction = {
+          serviceCategory: result.serviceCategory,
+          taskType: result.taskType,
+          tier: result.tier,
+          descriptionSummary: result.descriptionSummary
+        };
+        renderReviewCard(currentExtraction);
+      }
+    } catch (err) {
+      removeForgeTyping();
+      appendForgeMessage(messagesEl, 'assistant', 'Something went wrong on our end. Please try again in a moment.');
+    } finally {
+      sending = false;
+      input.disabled = false;
+      input.focus();
+    }
+  });
+
+  document.getElementById('forgeKeepChattingBtn').addEventListener('click', () => {
+    reviewCard.style.display = 'none';
+    input.focus();
+  });
+
+  submitBtn.addEventListener('click', async () => {
+    if (!currentExtraction) return;
+    errorEl.style.display = 'none';
+    successEl.style.display = 'none';
+
+    const item = getCatalogItem(currentExtraction.serviceCategory, currentExtraction.taskType);
+    const originalLabel = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting…';
+
+    const result = await submitCatalogRequest({
+      profile,
+      category: currentExtraction.serviceCategory,
+      taskType: currentExtraction.taskType,
+      tier: currentExtraction.tier,
+      description: currentExtraction.descriptionSummary,
+      agreedPrice: item ? item[currentExtraction.tier] : null,
+      file: attachmentInput.files[0],
+      onAttachmentStatus: (msg) => { attachmentStatus.textContent = msg; }
+    });
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalLabel;
+
+    if (result.error) {
+      errorEl.textContent = result.error;
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    reviewCard.style.display = 'none';
+    attachmentInput.value = '';
+    currentExtraction = null;
+
+    successEl.textContent = 'Request submitted — we\'ll follow up shortly. You can track it under My Projects.';
+    successEl.style.display = 'block';
+    renderProjectsPanel(profile.id);
+  });
+}
+
 // -------- Init --------
 (async () => {
   const session = await requireAuth();
@@ -688,6 +894,8 @@ async function initPackagesPanel(profile) {
   renderHeader(profile);
   renderBusinessPoolSection(profile);
   initTabs();
+  initNewRequestModeToggle();
+  initForgeChat(profile);
   initNewRequestWizard(profile);
   initPackagesPanel(profile);
   renderProjectsPanel(userId);
