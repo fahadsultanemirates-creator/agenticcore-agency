@@ -1,0 +1,3 @@
+# Supabase CLI local cache/state -- not project content, regenerated
+# locally by `supabase` commands (e.g. `supabase functions deploy`).
+supabase/.temp/
