@@ -67,6 +67,18 @@
   overflow: hidden;
 }
 
+/* The [hidden] attribute (toggled by chat-widget.js's panel.hidden =
+   true/false) only takes effect via a same-or-higher-specificity rule --
+   the browser's own [hidden] { display: none } lives in the user-agent
+   stylesheet, which loses to any author rule of equal specificity, so
+   .chat-widget-panel's unconditional `display: flex` above was silently
+   overriding it and leaving the panel permanently visible regardless of
+   open/closed state. This compound selector has higher specificity than
+   .chat-widget-panel alone, so it wins correctly when hidden is set. */
+.chat-widget-panel[hidden] {
+  display: none;
+}
+
 .chat-widget-header {
   padding: var(--space-sm) var(--space-md);
   background: linear-gradient(160deg, var(--bg-panel-hover), var(--bg-primary));
