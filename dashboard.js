@@ -260,6 +260,51 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+// -------- PayRam checkout --------
+// Calls payram-create-payment with the caller's own session token (the
+// function resolves identity server-side and re-verifies the request
+// belongs to them -- this call can't be spoofed into paying for someone
+// else's request). Returns { url, amountDue } on success or { error }
+// on failure; never throws, so a PayRam hiccup can't break the request
+// submission it's called after.
+async function initiatePayramPayment(requestId) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) return { error: 'Not authenticated' };
+
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/payram-create-payment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({ requestId })
+    });
+    const data = await resp.json().catch(() => null);
+    if (!resp.ok || !data?.url) {
+      return { error: data?.error || 'Could not create a payment link.' };
+    }
+    return { url: data.url, amountDue: data.amountDue };
+  } catch (err) {
+    console.error('initiatePayramPayment failed:', err);
+    return { error: 'Could not reach the payment provider.' };
+  }
+}
+
+// Renders the "pay to start" CTA (or a graceful fallback note) into an
+// already-visible success banner element.
+function renderPaymentCTA(container, result) {
+  const note = document.createElement('div');
+  note.style.marginTop = 'var(--space-sm, 0.75rem)';
+  if (result.url) {
+    note.innerHTML = `<a href="${result.url}" target="_blank" rel="noopener" class="btn btn-primary">Pay ${formatMoney(result.amountDue)} to start your project →</a>`;
+  } else {
+    const reason = (result.error || 'something went wrong generating it automatically').replace(/\.+$/, '');
+    note.textContent = `We'll follow up with a payment link shortly — ${reason}.`;
+  }
+  container.appendChild(note);
+}
+
 // Generic service->task->tier->details->submit catalog wizard, shared by
 // the New Request tab (full price) and the Packages tab's 50%-off add-on
 // flow (same steps, discounted price + a note on the order).
@@ -433,25 +478,33 @@ function initCatalogWizard(cfg) {
       attachmentStatus.textContent = '';
     }
 
-    const { error } = await supabaseClient.from('requests').insert({
-      user_id: cfg.profile.id,
-      service_category: state.category,
-      task_type: state.taskType,
-      tier: tierDbValue(state.tier),
-      description,
-      agreed_price: priceFor(state.tier, item),
-      status: 'awaiting_payment',
-      attachment_path: attachmentPath
-    });
-
-    btn.disabled = false;
-    btn.textContent = originalLabel;
+    const { data: insertedRequest, error } = await supabaseClient
+      .from('requests')
+      .insert({
+        user_id: cfg.profile.id,
+        service_category: state.category,
+        task_type: state.taskType,
+        tier: tierDbValue(state.tier),
+        description,
+        agreed_price: priceFor(state.tier, item),
+        status: 'awaiting_payment',
+        attachment_path: attachmentPath
+      })
+      .select('id')
+      .single();
 
     if (error) {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
       errorEl.textContent = error.message;
       errorEl.style.display = 'block';
       return;
     }
+
+    const paymentResult = await initiatePayramPayment(insertedRequest.id);
+
+    btn.disabled = false;
+    btn.textContent = originalLabel;
 
     state.category = null;
     state.taskType = null;
@@ -464,6 +517,7 @@ function initCatalogWizard(cfg) {
 
     successEl.textContent = cfg.successMessage;
     successEl.style.display = 'block';
+    renderPaymentCTA(successEl, paymentResult);
     if (cfg.onSuccess) cfg.onSuccess();
   });
 
@@ -590,24 +644,32 @@ function initPackagesTab(profile) {
       attachmentStatus.textContent = '';
     }
 
-    const { error } = await supabaseClient.from('requests').insert({
-      user_id: profile.id,
-      service_category: 'AgenticCore Package',
-      tier: pkg.tier,
-      description: `${pkg.label} package order — priority handling, no additional scoping needed.${description ? ' ' + description : ''}`,
-      agreed_price: pkg.price,
-      status: 'awaiting_payment',
-      attachment_path: attachmentPath
-    });
-
-    btn.disabled = false;
-    btn.textContent = originalLabel;
+    const { data: insertedRequest, error } = await supabaseClient
+      .from('requests')
+      .insert({
+        user_id: profile.id,
+        service_category: 'AgenticCore Package',
+        tier: pkg.tier,
+        description: `${pkg.label} package order — priority handling, no additional scoping needed.${description ? ' ' + description : ''}`,
+        agreed_price: pkg.price,
+        status: 'awaiting_payment',
+        attachment_path: attachmentPath
+      })
+      .select('id')
+      .single();
 
     if (error) {
+      btn.disabled = false;
+      btn.textContent = originalLabel;
       errorEl.textContent = error.message;
       errorEl.style.display = 'block';
       return;
     }
+
+    const paymentResult = await initiatePayramPayment(insertedRequest.id);
+
+    btn.disabled = false;
+    btn.textContent = originalLabel;
 
     state.tier = null;
     document.getElementById('pkgDescription').value = '';
@@ -617,6 +679,7 @@ function initPackagesTab(profile) {
 
     successEl.textContent = 'Package order submitted — you can now add extra services at 50% off below, and track your order under My Projects.';
     successEl.style.display = 'block';
+    renderPaymentCTA(successEl, paymentResult);
     unlockAddonSection(profile);
     renderProjectsPanel(profile.id);
   });
