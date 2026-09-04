@@ -83,6 +83,13 @@ export async function handleRequest(req: Request): Promise<Response> {
     .maybeSingle();
 
   if (fetchError || !reqRow) {
+    // Logged distinctly from the client-facing message on purpose: a
+    // genuinely missing row and a query/permissions error (e.g. a
+    // misconfigured SUPABASE_SERVICE_ROLE_KEY quietly falling back to
+    // an RLS-restricted role, which looks identical to "no rows" since
+    // RLS filters rather than errors) look the same to the caller but
+    // need different fixes.
+    console.error('payram-create-payment: request lookup failed', { requestId, fetchError });
     return jsonResponse({ error: 'Request not found' }, 404);
   }
 
