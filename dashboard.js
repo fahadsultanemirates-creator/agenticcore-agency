@@ -260,7 +260,17 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// -------- PayRam checkout --------
+// -------- Checkout: PayRam + manual USDT (BEP20) --------
+// 30% due upfront, same split shown to visitors on services.html/terms.html
+// and enforced server-side by payram-create-payment -- kept here too so the
+// USDT option can display an amount even when PayRam itself is unreachable.
+const UPFRONT_FRACTION = 0.3;
+const USDT_BEP20_ADDRESS = '0x62Ad7D55fbc8A8591109D72b67Ec63aa1EE196bC';
+
+function upfrontAmountDue(agreedPrice) {
+  return Math.round(agreedPrice * UPFRONT_FRACTION * 100) / 100;
+}
+
 // Calls payram-create-payment with the caller's own session token (the
 // function resolves identity server-side and re-verifies the request
 // belongs to them -- this call can't be spoofed into paying for someone
@@ -291,18 +301,51 @@ async function initiatePayramPayment(requestId) {
   }
 }
 
-// Renders the "pay to start" CTA (or a graceful fallback note) into an
-// already-visible success banner element.
-function renderPaymentCTA(container, result) {
-  const note = document.createElement('div');
-  note.style.marginTop = 'var(--space-sm, 0.75rem)';
-  if (result.url) {
-    note.innerHTML = `<a href="${result.url}" target="_blank" rel="noopener" class="btn btn-primary">Pay ${formatMoney(result.amountDue)} to start your project →</a>`;
+// Renders both checkout options into an already-visible success banner:
+// the PayRam link (or a graceful fallback note if that call failed) and
+// manual USDT (BEP20) -- always available since it doesn't depend on
+// PayRam. USDT payments aren't automatically confirmed like PayRam's are
+// (no webhook watches this address), so this asks the client to notify
+// support with their request id + transaction hash for manual review.
+function renderPaymentCTA(container, { requestId, amountDue, payram }) {
+  const wrap = document.createElement('div');
+  wrap.style.marginTop = 'var(--space-sm, 0.75rem)';
+  wrap.style.display = 'flex';
+  wrap.style.flexWrap = 'wrap';
+  wrap.style.gap = 'var(--space-md, 1rem)';
+
+  const payramCol = document.createElement('div');
+  if (payram.url) {
+    payramCol.innerHTML = `<a href="${payram.url}" target="_blank" rel="noopener" class="btn btn-primary">Pay ${formatMoney(payram.amountDue)} to start your project →</a>`;
   } else {
-    const reason = (result.error || 'something went wrong generating it automatically').replace(/\.+$/, '');
-    note.textContent = `We'll follow up with a payment link shortly — ${reason}.`;
+    const reason = (payram.error || 'something went wrong generating it automatically').replace(/\.+$/, '');
+    payramCol.textContent = `Card/other crypto payment link: we'll follow up shortly — ${reason}.`;
   }
-  container.appendChild(note);
+  wrap.appendChild(payramCol);
+
+  const usdtCol = document.createElement('div');
+  usdtCol.innerHTML = `
+    <p class="dash-card-note" style="margin:0 0 0.4rem;">Or pay ${formatMoney(amountDue)} in USDT (BEP20 / BNB Smart Chain):</p>
+    <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
+      <img src="usdt-bep20-qr.png" alt="USDT BEP20 address QR code" style="width:80px;height:80px;border-radius:6px;">
+      <div>
+        <code style="font-size:0.8rem;word-break:break-all;">${USDT_BEP20_ADDRESS}</code><br>
+        <button type="button" class="btn btn-secondary btn-sm copy-usdt-address-btn" style="margin-top:0.3rem;">Copy address</button>
+      </div>
+    </div>
+    <p class="dash-card-note" style="margin:0.4rem 0 0;">After sending, message us on <a href="https://t.me/agenticcore_support" target="_blank" rel="noopener">Telegram</a> with your request ID (<code>${requestId}</code>) and transaction hash so we can confirm it — USDT payments are verified manually.</p>
+  `;
+  wrap.appendChild(usdtCol);
+
+  const copyBtn = usdtCol.querySelector('.copy-usdt-address-btn');
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(USDT_BEP20_ADDRESS).then(() => {
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => { copyBtn.textContent = 'Copy address'; }, 1500);
+    });
+  });
+
+  container.appendChild(wrap);
 }
 
 // Generic service->task->tier->details->submit catalog wizard, shared by
@@ -478,6 +521,8 @@ function initCatalogWizard(cfg) {
       attachmentStatus.textContent = '';
     }
 
+    const agreedPrice = priceFor(state.tier, item);
+
     const { data: insertedRequest, error } = await supabaseClient
       .from('requests')
       .insert({
@@ -486,7 +531,7 @@ function initCatalogWizard(cfg) {
         task_type: state.taskType,
         tier: tierDbValue(state.tier),
         description,
-        agreed_price: priceFor(state.tier, item),
+        agreed_price: agreedPrice,
         status: 'awaiting_payment',
         attachment_path: attachmentPath
       })
@@ -517,7 +562,7 @@ function initCatalogWizard(cfg) {
 
     successEl.textContent = cfg.successMessage;
     successEl.style.display = 'block';
-    renderPaymentCTA(successEl, paymentResult);
+    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(agreedPrice), payram: paymentResult });
     if (cfg.onSuccess) cfg.onSuccess();
   });
 
@@ -679,7 +724,7 @@ function initPackagesTab(profile) {
 
     successEl.textContent = 'Package order submitted — you can now add extra services at 50% off below, and track your order under My Projects.';
     successEl.style.display = 'block';
-    renderPaymentCTA(successEl, paymentResult);
+    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(pkg.price), payram: paymentResult });
     unlockAddonSection(profile);
     renderProjectsPanel(profile.id);
   });
