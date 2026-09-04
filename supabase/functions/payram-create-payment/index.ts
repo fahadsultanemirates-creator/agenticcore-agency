@@ -82,14 +82,18 @@ export async function handleRequest(req: Request): Promise<Response> {
     .eq('id', requestId)
     .maybeSingle();
 
-  if (fetchError || !reqRow) {
-    // Logged distinctly from the client-facing message on purpose: a
-    // genuinely missing row and a query/permissions error (e.g. a
-    // misconfigured SUPABASE_SERVICE_ROLE_KEY quietly falling back to
-    // an RLS-restricted role, which looks identical to "no rows" since
-    // RLS filters rather than errors) look the same to the caller but
-    // need different fixes.
-    console.error('payram-create-payment: request lookup failed', { requestId, fetchError });
+  // Split deliberately: a genuinely missing row (no error, just zero
+  // rows) is a 404 the caller can act on ("check your requestId"). A
+  // real query error -- wrong column, permissions, etc. -- is a server
+  // malfunction masquerading as "not found" if left to fall through the
+  // same message (this happened live: a missing migration left
+  // requests.payram_payment_url undefined, and the query's 42703 error
+  // was indistinguishable from "no such request" until this split).
+  if (fetchError) {
+    console.error('payram-create-payment: request lookup errored', { requestId, fetchError });
+    return jsonResponse({ error: `Database error looking up the request: ${fetchError.message}` }, 500);
+  }
+  if (!reqRow) {
     return jsonResponse({ error: 'Request not found' }, 404);
   }
 

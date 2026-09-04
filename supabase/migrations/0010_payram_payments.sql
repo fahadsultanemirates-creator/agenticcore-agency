@@ -19,7 +19,7 @@
 alter table public.billing
   add column if not exists request_id uuid references public.requests(id) on delete set null;
 
-alter table public.billing drop constraint billing_payment_type_check;
+alter table public.billing drop constraint if exists billing_payment_type_check;
 alter table public.billing add constraint billing_payment_type_check
   check (payment_type in ('upfront', 'milestone', 'full'));
 
