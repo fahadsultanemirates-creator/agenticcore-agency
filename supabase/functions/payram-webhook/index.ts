@@ -81,12 +81,20 @@ export async function handleRequest(req: Request): Promise<Response> {
     return new Response('ok');
   }
 
-  const { data: request } = await supabaseAdmin
+  const { data: request, error: fetchError } = await supabaseAdmin
     .from('requests')
     .select('id, user_id, status')
     .eq('id', invoiceId)
     .maybeSingle();
 
+  // A genuine query error (bad column, permissions, etc.) must NOT return
+  // 200 -- PayRam won't retry a 200, so a real server error disguised as
+  // "ok" would silently lose the confirmation for good. Only a truly
+  // missing request (no error, zero rows) acks 200 with no further action.
+  if (fetchError) {
+    console.error('payram-webhook: request lookup errored', { invoiceId, fetchError });
+    return new Response('Database error', { status: 500 });
+  }
   if (!request) {
     console.error('payram-webhook: no request found for invoice_id', invoiceId);
     return new Response('ok');
@@ -100,16 +108,48 @@ export async function handleRequest(req: Request): Promise<Response> {
 
   const filledAmount = Number(payload?.filled_amount_in_usd ?? payload?.amount ?? 0);
 
-  await supabaseAdmin.from('requests').update({ status: 'confirmed' }).eq('id', request.id);
+  // Insert the billing row before flipping status, not after: the
+  // idempotency check above gates on status = 'confirmed', so if status
+  // flipped first and the insert then failed, a retry would hit that
+  // gate and skip the insert forever, marking the request paid with no
+  // billing record. This order keeps a retry able to complete the insert
+  // if the first attempt only got partway -- but that same ordering means
+  // a retry landing between a successful insert and a failed status
+  // update would otherwise insert a second billing row, so check for one
+  // first rather than inserting unconditionally.
+  const { data: existingBilling, error: existingBillingError } = await supabaseAdmin
+    .from('billing')
+    .select('id')
+    .eq('request_id', request.id)
+    .maybeSingle();
 
-  await supabaseAdmin.from('billing').insert({
-    user_id: request.user_id,
-    request_id: request.id,
-    amount: filledAmount,
-    payment_type: 'upfront',
-    status: 'paid',
-    paid_at: new Date().toISOString()
-  });
+  if (existingBillingError) {
+    console.error('payram-webhook: existing-billing lookup errored', { invoiceId, existingBillingError });
+    return new Response('Database error', { status: 500 });
+  }
+
+  if (!existingBilling) {
+    const { error: insertError } = await supabaseAdmin.from('billing').insert({
+      user_id: request.user_id,
+      request_id: request.id,
+      amount: filledAmount,
+      payment_type: 'upfront',
+      status: 'paid',
+      paid_at: new Date().toISOString()
+    });
+
+    if (insertError) {
+      console.error('payram-webhook: billing insert failed', { invoiceId, insertError });
+      return new Response('Database error', { status: 500 });
+    }
+  }
+
+  const { error: updateError } = await supabaseAdmin.from('requests').update({ status: 'confirmed' }).eq('id', request.id);
+
+  if (updateError) {
+    console.error('payram-webhook: request status update failed', { invoiceId, updateError });
+    return new Response('Database error', { status: 500 });
+  }
 
   return new Response('ok');
 }
