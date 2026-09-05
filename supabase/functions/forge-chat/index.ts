@@ -80,10 +80,15 @@ export async function handleRequest(req: Request): Promise<Response> {
   const { action, message } = body || {};
 
   if (action === 'history') {
-    const history = await getConversationHistory(supabaseAdmin, 'forge', caller.id);
-    return jsonResponse({
-      messages: history.map((m) => ({ role: m.role, content: m.content }))
-    });
+    try {
+      const history = await getConversationHistory(supabaseAdmin, 'forge', caller.id);
+      return jsonResponse({
+        messages: history.map((m) => ({ role: m.role, content: m.content }))
+      });
+    } catch (err) {
+      console.error('forge-chat: getConversationHistory failed:', err);
+      return jsonResponse({ error: 'Failed to load conversation history' }, 500);
+    }
   }
 
   if (action === 'message') {
@@ -94,16 +99,26 @@ export async function handleRequest(req: Request): Promise<Response> {
       return jsonResponse({ error: 'Message too long' }, 400);
     }
 
-    const result = await handleIncomingMessage({
-      supabaseAdmin,
-      channel: 'forge',
-      externalId: caller.id,
-      userMessage: message,
-      xaiApiKey: XAI_API_KEY,
-      model: XAI_MODEL
-    });
+    // findOrCreateConversation (inside handleIncomingMessage) isn't
+    // wrapped in bot-core's own try/catch the way the xAI call is -- a
+    // real DB error here (e.g. a channel check-constraint violation)
+    // must not surface as an unhandled exception, so it's caught here
+    // instead, logged, and returned as a normal JSON error response.
+    try {
+      const result = await handleIncomingMessage({
+        supabaseAdmin,
+        channel: 'forge',
+        externalId: caller.id,
+        userMessage: message,
+        xaiApiKey: XAI_API_KEY,
+        model: XAI_MODEL
+      });
 
-    return jsonResponse({ reply: result.reply, needsHuman: result.needsHuman });
+      return jsonResponse({ reply: result.reply, needsHuman: result.needsHuman });
+    } catch (err) {
+      console.error('forge-chat: handleIncomingMessage failed:', err);
+      return jsonResponse({ error: 'Something went wrong on our end. Please try again in a moment.' }, 500);
+    }
   }
 
   return jsonResponse({ error: 'Unknown action -- expected "message" or "history"' }, 400);
