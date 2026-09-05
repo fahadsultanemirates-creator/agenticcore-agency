@@ -570,6 +570,127 @@ function initCatalogWizard(cfg) {
   goToStep(1);
 }
 
+// -------- Forge: New Request's dashboard chat assistant --------
+// Same brain as the Telegram manager bot (forge-chat -> bot-core.ts's
+// handleIncomingMessage on the 'forge' channel) -- a completed
+// conversation files a manager_tasks row for the team, same as
+// Telegram, rather than auto-filling this tab's own submit form.
+function appendForgeMessage(container, role, text) {
+  const el = document.createElement('div');
+  el.className = `forge-chat-message forge-chat-message-${role}`;
+  el.textContent = text;
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+  return el;
+}
+
+function appendForgeTyping(container) {
+  const el = document.createElement('div');
+  el.className = 'forge-chat-typing';
+  el.id = 'forgeChatTyping';
+  el.innerHTML = '<span></span><span></span><span></span>';
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeForgeTyping() {
+  const el = document.getElementById('forgeChatTyping');
+  if (el) el.remove();
+}
+
+async function callForgeChat(action, message) {
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session) throw new Error('Not authenticated');
+
+  const resp = await fetch(`${SUPABASE_URL}/functions/v1/forge-chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`
+    },
+    body: JSON.stringify(action === 'history' ? { action: 'history' } : { action: 'message', message })
+  });
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({}));
+    throw new Error(body.error || `Request failed (${resp.status})`);
+  }
+  return resp.json();
+}
+
+function initForgeChat() {
+  const messagesEl = document.getElementById('forgeChatMessages');
+  const form = document.getElementById('forgeChatForm');
+  const input = document.getElementById('forgeChatInput');
+
+  let historyLoaded = false;
+  let sending = false;
+
+  async function loadHistory() {
+    if (historyLoaded) return;
+    historyLoaded = true;
+    try {
+      const { messages } = await callForgeChat('history');
+      if (messages && messages.length) {
+        messages.forEach((m) => appendForgeMessage(messagesEl, m.role, m.content));
+      } else {
+        appendForgeMessage(messagesEl, 'assistant', "👋 Welcome! I'm Forge — let's make a project. Tell me a bit about what you need and I'll help you scope it out.");
+      }
+    } catch (err) {
+      console.error('Forge history load failed:', err);
+      appendForgeMessage(messagesEl, 'assistant', "👋 Welcome! I'm Forge — let's make a project. Tell me a bit about what you need and I'll help you scope it out.");
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text || sending) return;
+
+    appendForgeMessage(messagesEl, 'user', text);
+    input.value = '';
+    sending = true;
+    input.disabled = true;
+    appendForgeTyping(messagesEl);
+
+    try {
+      const { reply } = await callForgeChat('message', text);
+      removeForgeTyping();
+      appendForgeMessage(messagesEl, 'assistant', reply);
+    } catch (err) {
+      console.error('Forge message failed:', err);
+      removeForgeTyping();
+      appendForgeMessage(messagesEl, 'assistant', 'Something went wrong on our end. Please try again in a moment.');
+    } finally {
+      sending = false;
+      input.disabled = false;
+      input.focus();
+    }
+  });
+
+  loadHistory();
+}
+
+function initNewRequestModeToggle() {
+  const forgeBtn = document.getElementById('forgeModeBtn');
+  const wizardBtn = document.getElementById('wizardModeBtn');
+  const forgeChat = document.getElementById('forgeChat');
+  const wizard = document.getElementById('requestWizard');
+
+  forgeBtn.addEventListener('click', () => {
+    forgeBtn.classList.add('active');
+    wizardBtn.classList.remove('active');
+    forgeChat.style.display = 'flex';
+    wizard.style.display = 'none';
+  });
+
+  wizardBtn.addEventListener('click', () => {
+    wizardBtn.classList.add('active');
+    forgeBtn.classList.remove('active');
+    wizard.style.display = 'block';
+    forgeChat.style.display = 'none';
+  });
+}
+
 function initNewRequestWizard(profile) {
   initCatalogWizard({
     profile,
@@ -796,6 +917,8 @@ async function initPackagesPanel(profile) {
   renderHeader(profile);
   renderBusinessPoolSection(profile);
   initTabs();
+  initNewRequestModeToggle();
+  initForgeChat();
   initNewRequestWizard(profile);
   initPackagesPanel(profile);
   renderProjectsPanel(userId);

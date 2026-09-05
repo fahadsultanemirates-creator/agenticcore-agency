@@ -103,7 +103,20 @@
         <div class="dash-error" id="requestError"></div>
         <div class="dash-success" id="requestSuccess"></div>
 
-        <div class="wizard" id="requestWizard">
+        <div class="new-request-mode-toggle">
+          <button type="button" class="mode-toggle-btn active" id="forgeModeBtn" data-mode="forge">💬 Chat with Forge</button>
+          <button type="button" class="mode-toggle-btn" id="wizardModeBtn" data-mode="wizard">📋 Step-by-step</button>
+        </div>
+
+        <div class="forge-chat" id="forgeChat">
+          <div class="forge-chat-messages" id="forgeChatMessages" aria-live="polite"></div>
+          <form class="forge-chat-form" id="forgeChatForm">
+            <input type="text" id="forgeChatInput" class="forge-chat-input" placeholder="Tell Forge what you'd like to build…" autocomplete="off" maxlength="4000">
+            <button type="submit" class="btn btn-primary btn-sm" id="forgeChatSend">Send</button>
+          </form>
+        </div>
+
+        <div class="wizard" id="requestWizard" style="display:none;">
           <ol class="wizard-steps" id="wizardStepsIndicator">
             <li data-step="1" class="active">1. Service</li>
             <li data-step="2">2. Task</li>

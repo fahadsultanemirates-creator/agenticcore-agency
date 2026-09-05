@@ -5,19 +5,23 @@
 // what keeps a future voice layer (STT before this, TTS after) from
 // requiring a rewrite -- it would wrap this function, not replace it.
 //
-// The two channels now diverge on which model answers and how much
-// structure the reply carries: widget stays on OpenRouter with the
-// original 4-field JSON (unchanged, so widget-chat needs no changes at
-// all), while telegram uses xAI's Grok and an expanded 7-field JSON that
-// can additionally file a manager_tasks row when the conversation
-// describes something the manager should personally follow up on.
+// The channels diverge on which model answers and how much structure
+// the reply carries: widget stays on OpenRouter with the original
+// 4-field JSON (unchanged, so widget-chat needs no changes at all),
+// while telegram and forge both use xAI's Grok and an expanded 7-field
+// JSON that can additionally file a manager_tasks row when the
+// conversation describes something the manager should personally
+// follow up on. forge is the dashboard's own project-intake assistant
+// (see supabase/functions/forge-chat/index.ts) -- same brain as
+// Telegram's manager bot, just reached from inside the dashboard by an
+// already-signed-in client instead of from Telegram.
 
 import { BUSINESS_KNOWLEDGE_PROMPT } from './business-knowledge.ts';
 
 // deno-lint-ignore no-explicit-any
 type SupabaseAdmin = any;
 
-export type Channel = 'widget' | 'telegram';
+export type Channel = 'widget' | 'telegram' | 'forge';
 
 export interface BotConversation {
   id: string;
@@ -90,6 +94,14 @@ const RATE_LIMIT_MESSAGE =
   "You're sending messages a bit too quickly — please wait a few minutes and try again.";
 const GENERIC_ERROR_MESSAGE =
   'Something went wrong on our end. Please try again in a moment, or reach out directly: https://t.me/agenticcore_managers';
+
+// Additive context for the forge channel only, appended on top of the
+// same BUSINESS_KNOWLEDGE_PROMPT every channel shares -- not a
+// replacement persona, just the extra framing Telegram doesn't need
+// (whoever's writing is already a signed-in client, not an anonymous
+// visitor, and the dashboard has no "/start" message to hang a greeting
+// off of the way Telegram does).
+const FORGE_ADDITIVE_PROMPT = `You're embedded directly in the client's own dashboard (not Telegram or the public homepage) -- whoever is writing is already a signed-in client, not an anonymous visitor. If the conversation history above is empty, this is the very first thing they've said to you here: open with a short, warm welcome and invite them to describe a project they'd like to start, rather than diving straight into an answer. If they want to start one, guide them through describing it one step at a time (service, scope, tier/budget expectations, any specifics) rather than demanding everything at once, until you have enough to file it as a task for the team -- same create_task/task_title/task_type judgment you'd use anywhere else.`;
 
 export async function findOrCreateConversation(
   supabaseAdmin: SupabaseAdmin,
@@ -364,9 +376,13 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
 
   const history = await getRecentMessages(supabaseAdmin, conversation.id);
 
-  const systemPrompt = languageHint
-    ? `${BUSINESS_KNOWLEDGE_PROMPT}\n\n(Platform hint, not a rule: this visitor's device/client language looks like "${languageHint}". Use it only if their own message gives you no better signal -- their actual words always win.)`
-    : BUSINESS_KNOWLEDGE_PROMPT;
+  let systemPrompt = BUSINESS_KNOWLEDGE_PROMPT;
+  if (languageHint) {
+    systemPrompt += `\n\n(Platform hint, not a rule: this visitor's device/client language looks like "${languageHint}". Use it only if their own message gives you no better signal -- their actual words always win.)`;
+  }
+  if (channel === 'forge') {
+    systemPrompt += `\n\n${FORGE_ADDITIVE_PROMPT}`;
+  }
 
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -379,8 +395,8 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
   let needsHuman: boolean;
   let uncertain: boolean;
 
-  if (channel === 'telegram') {
-    if (!xaiApiKey) throw new Error('xaiApiKey is required for the telegram channel');
+  if (channel === 'telegram' || channel === 'forge') {
+    if (!xaiApiKey) throw new Error(`xaiApiKey is required for the ${channel} channel`);
 
     let parsed: ManagerParsedReply;
     try {
