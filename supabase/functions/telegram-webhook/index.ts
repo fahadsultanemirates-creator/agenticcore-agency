@@ -1,8 +1,9 @@
 // AgenticCore Agency — Telegram bot webhook. Registered as the bot's
-// webhook URL via Telegram's setWebhook API (see the PR description for
-// the exact one-time setup steps). Every message Telegram routes here
-// goes through the same handleIncomingMessage() core the homepage widget
-// uses, so both channels genuinely share one brain.
+// webhook URL via Telegram's setWebhook API. Every message Telegram
+// routes here goes through handleIncomingMessage() in ../_shared/bot-core.ts,
+// same as the homepage widget -- but on the 'telegram' channel that core
+// now answers via xAI's Grok instead of OpenRouter, and can file a
+// manager_tasks row for the account owner to follow up on.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleIncomingMessage } from '../_shared/bot-core.ts';
@@ -11,8 +12,8 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!;
 const TELEGRAM_WEBHOOK_SECRET = Deno.env.get('TELEGRAM_WEBHOOK_SECRET')!;
-const OPENROUTER_API_KEY = Deno.env.get('OPENROUTER_API_KEY')!;
-const OPENROUTER_MODEL = Deno.env.get('OPENROUTER_MODEL') || undefined;
+const XAI_API_KEY = Deno.env.get('XAI_API_KEY')!;
+const XAI_MODEL = Deno.env.get('XAI_MODEL') || undefined;
 
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 // Telegram's hard limit is 4096 chars; this is just a safety margin so a
@@ -79,8 +80,8 @@ export async function handleRequest(req: Request): Promise<Response> {
       channel: 'telegram',
       externalId: String(chatId),
       userMessage: text,
-      openRouterApiKey: OPENROUTER_API_KEY,
-      model: OPENROUTER_MODEL,
+      xaiApiKey: XAI_API_KEY,
+      model: XAI_MODEL,
       languageHint
     });
 

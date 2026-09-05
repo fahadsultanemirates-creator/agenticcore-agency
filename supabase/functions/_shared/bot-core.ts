@@ -4,6 +4,13 @@
 // nothing about HTTP requests or Telegram updates. That split is also
 // what keeps a future voice layer (STT before this, TTS after) from
 // requiring a rewrite -- it would wrap this function, not replace it.
+//
+// The two channels now diverge on which model answers and how much
+// structure the reply carries: widget stays on OpenRouter with the
+// original 4-field JSON (unchanged, so widget-chat needs no changes at
+// all), while telegram uses xAI's Grok and an expanded 7-field JSON that
+// can additionally file a manager_tasks row when the conversation
+// describes something the manager should personally follow up on.
 
 import { BUSINESS_KNOWLEDGE_PROMPT } from './business-knowledge.ts';
 
@@ -33,7 +40,13 @@ export interface HandleMessageParams {
   channel: Channel;
   externalId: string;
   userMessage: string;
-  openRouterApiKey: string;
+  // Required for channel 'widget', unused for 'telegram'.
+  openRouterApiKey?: string;
+  // Required for channel 'telegram', unused for 'widget'.
+  xaiApiKey?: string;
+  // Model override -- interpreted against whichever provider the
+  // channel uses (OpenRouter model id for 'widget', xAI model id for
+  // 'telegram').
   model?: string;
   // Optional signal from the transport layer (Telegram's per-user
   // language_code, or the browser's navigator.language) -- not a
@@ -51,9 +64,21 @@ export interface HandleMessageResult {
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_MODEL = 'anthropic/claude-sonnet-5';
+
+const XAI_URL = 'https://api.x.ai/v1/chat/completions';
+const DEFAULT_XAI_MODEL = 'grok-4-1';
+
 const HISTORY_LIMIT = 30;
 const RATE_LIMIT_WINDOW_MINUTES = 10;
 const RATE_LIMIT_MAX_USER_MESSAGES = 20;
+
+// manager_tasks id scheme: "AC-AGENCY-0001" -- brand prefix + a count of
+// existing rows for that brand, zero-padded to 4 digits. No Postgres
+// sequence; see createManagerTask() below for how the count-then-insert
+// race is handled without one.
+const TASK_BRAND = 'agency';
+const TASK_ID_PREFIX = 'AC-AGENCY';
+const MAX_TASK_ID_ATTEMPTS = 3;
 
 // These two strings are the only bot-authored text that isn't produced
 // by the model itself -- rare system-level fallbacks (an actual outage,
@@ -170,6 +195,59 @@ interface ParsedReply {
   uncertain: boolean;
 }
 
+// Telegram/manager-only: adds create_task/task_title/task_type on top of
+// the base reply shape. task_title/task_type are always strings (empty
+// when create_task is false) rather than nullable, since strict
+// json_schema mode across providers handles a plain required string more
+// reliably than a nullable union.
+const MANAGER_REPLY_JSON_SCHEMA = {
+  name: 'agenticcore_manager_bot_reply',
+  strict: true,
+  schema: {
+    type: 'object',
+    properties: {
+      reply: {
+        type: 'string',
+        description: "The reply to send, written entirely in the sender's own language."
+      },
+      detected_language: {
+        type: 'string',
+        description: 'ISO 639-1 code (or best-guess language name) of the language the sender wrote in.'
+      },
+      needs_human: {
+        type: 'boolean',
+        description:
+          'True if this conversation should be handed off to a human -- custom/large scope, price/scope negotiation, signs of frustration, or any commitment beyond pre-approved terms.'
+      },
+      uncertain: {
+        type: 'boolean',
+        description: 'True if the assistant is not confident in the reply, or the question falls outside the given business knowledge.'
+      },
+      create_task: {
+        type: 'boolean',
+        description:
+          'True if this conversation describes concrete work the manager should personally track and follow up on (a project inquiry, a specific complaint, a request needing manual verification, anything already flagged as needing human handoff). False for ordinary questions you can already answer.'
+      },
+      task_title: {
+        type: 'string',
+        description: 'Short (few-word) title summarizing the task. Empty string if create_task is false.'
+      },
+      task_type: {
+        type: 'string',
+        description: 'Short category for the task, e.g. "website", "design", "marketing", "bug", "general". Empty string if create_task is false.'
+      }
+    },
+    required: ['reply', 'detected_language', 'needs_human', 'uncertain', 'create_task', 'task_title', 'task_type'],
+    additionalProperties: false
+  }
+};
+
+interface ManagerParsedReply extends ParsedReply {
+  create_task: boolean;
+  task_title: string;
+  task_type: string;
+}
+
 async function callOpenRouter(
   apiKey: string,
   model: string,
@@ -202,8 +280,81 @@ async function callOpenRouter(
   return JSON.parse(content) as ParsedReply;
 }
 
+async function callXai(
+  apiKey: string,
+  model: string,
+  messages: { role: string; content: string }[]
+): Promise<ManagerParsedReply> {
+  const resp = await fetch(XAI_URL, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      response_format: { type: 'json_schema', json_schema: MANAGER_REPLY_JSON_SCHEMA },
+      temperature: 0.4
+    })
+  });
+
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`xAI request failed (${resp.status}): ${text.slice(0, 500)}`);
+  }
+
+  const data = await resp.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error('xAI response missing message content');
+  return JSON.parse(content) as ManagerParsedReply;
+}
+
+// Count-then-insert, exactly as specified (no Postgres sequence): count
+// existing rows for this brand, propose brand-1, pad to 4 digits. Two
+// messages arriving close together could compute the same count, so this
+// retries on a unique-violation against public_id's unique constraint
+// (the actual race guard) rather than trusting the count alone.
+async function createManagerTask(
+  supabaseAdmin: SupabaseAdmin,
+  params: { channel: Channel; externalId: string; title: string; taskType: string }
+): Promise<string> {
+  let lastError: unknown = null;
+
+  for (let attempt = 0; attempt < MAX_TASK_ID_ATTEMPTS; attempt++) {
+    const { count, error: countError } = await supabaseAdmin
+      .from('manager_tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('brand', TASK_BRAND);
+
+    if (countError) throw countError;
+
+    const publicId = `${TASK_ID_PREFIX}-${String((count || 0) + 1).padStart(4, '0')}`;
+
+    const { error: insertError } = await supabaseAdmin.from('manager_tasks').insert({
+      public_id: publicId,
+      brand: TASK_BRAND,
+      channel: params.channel,
+      external_id: params.externalId,
+      title: params.title,
+      task_type: params.taskType,
+      status: 'waiting_you'
+    });
+
+    if (!insertError) return publicId;
+
+    // 23505 = unique_violation on public_id -- another message raced on
+    // the same count-based id. Recompute and retry; anything else is a
+    // real error worth surfacing immediately.
+    if (insertError.code !== '23505') throw insertError;
+    lastError = insertError;
+  }
+
+  throw lastError ?? new Error('Could not allocate a unique manager task id after retries');
+}
+
 export async function handleIncomingMessage(params: HandleMessageParams): Promise<HandleMessageResult> {
-  const { supabaseAdmin, channel, externalId, userMessage, openRouterApiKey, model, languageHint } = params;
+  const { supabaseAdmin, channel, externalId, userMessage, openRouterApiKey, xaiApiKey, model, languageHint } = params;
 
   const conversation = await findOrCreateConversation(supabaseAdmin, channel, externalId);
 
@@ -223,29 +374,73 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
     { role: 'user', content: userMessage }
   ];
 
-  let parsed: ParsedReply;
-  try {
-    parsed = await callOpenRouter(openRouterApiKey, model || DEFAULT_MODEL, messages);
-  } catch (err) {
-    console.error('OpenRouter call failed:', err);
-    return { reply: GENERIC_ERROR_MESSAGE, needsHuman: false };
-  }
+  let reply: string;
+  let detectedLanguage: string;
+  let needsHuman: boolean;
+  let uncertain: boolean;
 
-  const needsHuman = Boolean(parsed.needs_human);
-  const uncertain = Boolean(parsed.uncertain);
+  if (channel === 'telegram') {
+    if (!xaiApiKey) throw new Error('xaiApiKey is required for the telegram channel');
+
+    let parsed: ManagerParsedReply;
+    try {
+      parsed = await callXai(xaiApiKey, model || DEFAULT_XAI_MODEL, messages);
+    } catch (err) {
+      console.error('xAI call failed:', err);
+      return { reply: GENERIC_ERROR_MESSAGE, needsHuman: false };
+    }
+
+    detectedLanguage = parsed.detected_language;
+    needsHuman = Boolean(parsed.needs_human);
+    uncertain = Boolean(parsed.uncertain);
+    reply = parsed.reply;
+
+    if (parsed.create_task) {
+      try {
+        const publicId = await createManagerTask(supabaseAdmin, {
+          channel,
+          externalId,
+          title: parsed.task_title || 'Untitled task',
+          taskType: parsed.task_type || 'general'
+        });
+        reply = `${reply}\n\nTask ID: ${publicId}`;
+      } catch (err) {
+        // A task-filing failure must not break the reply itself -- the
+        // conversation still gets a normal answer, just without a task
+        // filed. Logged so it's visible in the function's logs rather
+        // than silently lost.
+        console.error('createManagerTask failed:', err);
+      }
+    }
+  } else {
+    if (!openRouterApiKey) throw new Error('openRouterApiKey is required for the widget channel');
+
+    let parsed: ParsedReply;
+    try {
+      parsed = await callOpenRouter(openRouterApiKey, model || DEFAULT_MODEL, messages);
+    } catch (err) {
+      console.error('OpenRouter call failed:', err);
+      return { reply: GENERIC_ERROR_MESSAGE, needsHuman: false };
+    }
+
+    detectedLanguage = parsed.detected_language;
+    needsHuman = Boolean(parsed.needs_human);
+    uncertain = Boolean(parsed.uncertain);
+    reply = parsed.reply;
+  }
 
   await supabaseAdmin.from('bot_messages').insert([
     {
       conversation_id: conversation.id,
       role: 'user',
       content: userMessage,
-      detected_language: parsed.detected_language || null
+      detected_language: detectedLanguage || null
     },
     {
       conversation_id: conversation.id,
       role: 'assistant',
-      content: parsed.reply,
-      detected_language: parsed.detected_language || null,
+      content: reply,
+      detected_language: detectedLanguage || null,
       uncertain,
       handoff_triggered: needsHuman
     }
@@ -254,10 +449,10 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
   await supabaseAdmin
     .from('bot_conversations')
     .update({
-      language: parsed.detected_language || conversation.language,
+      language: detectedLanguage || conversation.language,
       needs_human: conversation.needs_human || needsHuman
     })
     .eq('id', conversation.id);
 
-  return { reply: parsed.reply, needsHuman };
+  return { reply, needsHuman };
 }
