@@ -3,9 +3,11 @@
 // Telegram routes here goes through handleIncomingMessage() in
 // ../_shared/bot-core.ts (the 'telegram' channel there answers via
 // xAI's Grok) -- but this file also owns a small owner-only task-manager
-// layer on top: /status, /approve, /reject, and an inline "patch this
-// task's draft" shortcut, all scoped to this file alone so bot-core.ts
-// (shared with the widget) stays untouched by any of it.
+// layer on top: /status, /approve, /reject, an inline "patch this task's
+// draft" shortcut, and (new) committing an approved/patched website
+// draft's files straight to jobs/AC-AGENCY-XXXX/ on main. All of it
+// lives in this file alone so bot-core.ts (shared with the widget) stays
+// untouched.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleIncomingMessage } from '../_shared/bot-core.ts';
@@ -17,9 +19,15 @@ const TELEGRAM_WEBHOOK_SECRET = Deno.env.get('TELEGRAM_WEBHOOK_SECRET')!;
 const XAI_API_KEY = Deno.env.get('XAI_API_KEY')!;
 const XAI_MODEL = Deno.env.get('XAI_MODEL') || undefined;
 // Telegram's numeric user id for the account owner, as a string (compared
-// against String(message.from.id)) -- gates /status, /approve, /reject.
-// Unset means nobody can use those commands (fails closed, not open).
+// against String(message.from.id)) -- gates /status, /approve, /reject,
+// and (together with a task's own external_id) the draft-patch shortcut.
+// Unset means nobody can use those (fails closed, not open).
 const OWNER_TELEGRAM_ID = Deno.env.get('OWNER_TELEGRAM_ID') || undefined;
+// Fine-grained PAT (or classic PAT) scoped to this repo with
+// contents:write, used only to commit an approved website task's files
+// into jobs/AC-AGENCY-XXXX/ on main. Not yet a live secret as of this
+// slice -- see the deploy notes.
+const GITHUB_TOKEN = Deno.env.get('GITHUB_TOKEN')!;
 
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 // Telegram's hard limit is 4096 chars; this is just a safety margin so a
@@ -34,6 +42,13 @@ const TASK_ID_PATTERN = /AC-AGENCY-\d{4}/i;
 const APPROVE_PATTERN = /^\/approve(?:@\S+)?\s+(AC-AGENCY-\d{4})\b/i;
 const REJECT_PATTERN = /^\/reject(?:@\S+)?\s+(AC-AGENCY-\d{4})\b/i;
 const STATUS_PATTERN = /^\/status(?:@\S+)?$/i;
+const APPROVABLE_STATUSES = new Set(['waiting_you', 'review']);
+
+const GITHUB_OWNER = 'fahadsultanemirates-creator';
+const GITHUB_REPO = 'agenticcore-agency';
+const GITHUB_API = 'https://api.github.com';
+const JOB_FILES_BRANCH = 'main';
+const MAX_COMMIT_ATTEMPTS = 2;
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -112,6 +127,152 @@ function patchPrompt(currentDraft: string, requestedChange: string): string {
   ].join('\n');
 }
 
+// ============================================================
+// Draft -> jobs/AC-AGENCY-XXXX/ file split + commit
+// ============================================================
+
+interface DraftFile {
+  path: string;
+  content: string;
+}
+
+// Rejects anything that could escape jobs/<publicId>/ -- filenames come
+// from the model's own output, not trusted input, so a hallucinated
+// "../../supabase/functions/..." or an absolute path must never reach
+// the GitHub API. Subdirectories within the job folder are fine (a
+// "multi-file website" reasonably includes e.g. css/style.css).
+function sanitizeJobFilePath(publicId: string, filename: string): string | null {
+  if (!/^AC-AGENCY-\d{4}$/.test(publicId)) return null;
+
+  const trimmed = filename.trim();
+  if (!trimmed || trimmed.includes('\0')) return null;
+  // Reject outright rather than normalize -- an absolute-looking path
+  // (leading "/", a Windows drive letter, or a backslash) from a model's
+  // output is treated as suspicious, not silently reinterpreted as
+  // relative.
+  if (trimmed.startsWith('/') || trimmed.includes('\\') || /^[a-zA-Z]:/.test(trimmed)) return null;
+
+  const segments = trimmed.split('/');
+  if (segments.some((seg) => seg === '..' || seg === '.' || seg === '')) return null;
+
+  return `jobs/${publicId}/${segments.join('/')}`;
+}
+
+// Parses "=== filename ===" delimited draft text into files. Returns an
+// empty array (nothing to commit, not an error) if the draft has no
+// recognizable markers -- expected for non-website drafts, which are
+// plain Markdown with no file structure to split.
+function parseDraftFiles(draftText: string, publicId: string): DraftFile[] {
+  const markerPattern = /^===\s*(.+?)\s*===\s*$/gm;
+  const matches = [...draftText.matchAll(markerPattern)];
+  if (matches.length === 0) return [];
+
+  const files: DraftFile[] = [];
+  for (let i = 0; i < matches.length; i++) {
+    const filename = matches[i][1];
+    const contentStart = matches[i].index! + matches[i][0].length;
+    const contentEnd = i + 1 < matches.length ? matches[i + 1].index! : draftText.length;
+    const content = draftText.slice(contentStart, contentEnd).replace(/^\n+/, '').replace(/\s+$/, '\n');
+
+    const path = sanitizeJobFilePath(publicId, filename);
+    if (path) files.push({ path, content });
+  }
+  return files;
+}
+
+async function githubRequest(path: string, opts: RequestInit = {}): Promise<any> {
+  const resp = await fetch(`${GITHUB_API}${path}`, {
+    ...opts,
+    headers: {
+      Authorization: `Bearer ${GITHUB_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'Content-Type': 'application/json',
+      ...(opts.headers || {})
+    }
+  });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`GitHub API ${opts.method || 'GET'} ${path} failed (${resp.status}): ${text.slice(0, 500)}`);
+  }
+  return resp.json();
+}
+
+// One atomic commit for all of a task's files, via the Git Data API
+// (blob/tree/commit/ref) rather than the single-file contents API, so N
+// files land as one commit instead of N. Retries once from a fresh ref
+// if updating heads/main lands on a stale parent (another push landed
+// in between) -- never force-pushes.
+async function commitJobFiles(publicId: string, files: DraftFile[], commitMessage: string): Promise<void> {
+  if (files.length === 0) return;
+
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt < MAX_COMMIT_ATTEMPTS; attempt++) {
+    try {
+      const ref = await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/ref/heads/${JOB_FILES_BRANCH}`);
+      const latestCommitSha = ref.object.sha;
+
+      const latestCommit = await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/commits/${latestCommitSha}`);
+      const baseTreeSha = latestCommit.tree.sha;
+
+      const tree = await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/trees`, {
+        method: 'POST',
+        body: JSON.stringify({
+          base_tree: baseTreeSha,
+          tree: files.map((f) => ({ path: f.path, mode: '100644', type: 'blob', content: f.content }))
+        })
+      });
+
+      const newCommit = await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/commits`, {
+        method: 'POST',
+        body: JSON.stringify({ message: commitMessage, tree: tree.sha, parents: [latestCommitSha] })
+      });
+
+      await githubRequest(`/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs/heads/${JOB_FILES_BRANCH}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ sha: newCommit.sha })
+      });
+
+      return;
+    } catch (err) {
+      lastError = err;
+      console.error(`telegram-webhook: commitJobFiles attempt ${attempt + 1} failed for ${publicId}`, err);
+    }
+  }
+  throw lastError;
+}
+
+// Shared by /approve and a successful draft-patch: only website-type
+// tasks get split into files (that's the only draft shape with file
+// markers -- everything else is plain Markdown with nothing to split).
+// Never throws -- a commit failure degrades to a note in the message
+// sent back, it must not undo the draft that was already saved.
+async function commitWebsiteDraftIfApplicable(
+  task: { task_type: string },
+  publicId: string,
+  draftText: string,
+  commitMessage: string
+): Promise<string> {
+  if (task.task_type !== 'website') return '';
+
+  const files = parseDraftFiles(draftText, publicId);
+  if (files.length === 0) {
+    return `\n\nNo "=== filename ===" markers found in the draft -- nothing committed to jobs/${publicId}/.`;
+  }
+
+  try {
+    await commitJobFiles(publicId, files, commitMessage);
+    return `\n\nCommitted ${files.length} file${files.length === 1 ? '' : 's'} to jobs/${publicId}/ on main.`;
+  } catch (err) {
+    console.error('telegram-webhook: commitWebsiteDraftIfApplicable failed', err);
+    return `\n\nDraft saved, but committing files to jobs/${publicId}/ failed -- check the function logs.`;
+  }
+}
+
+// ============================================================
+// Owner commands
+// ============================================================
+
 async function handleStatusCommand(chatId: number): Promise<void> {
   const { data, error } = await supabaseAdmin
     .from('manager_tasks')
@@ -138,7 +299,7 @@ async function handleStatusCommand(chatId: number): Promise<void> {
 async function handleApproveCommand(chatId: number, publicId: string): Promise<void> {
   const { data: task, error: fetchError } = await supabaseAdmin
     .from('manager_tasks')
-    .select('id, title, task_type, brief')
+    .select('id, title, task_type, brief, status')
     .eq('public_id', publicId)
     .eq('brand', TASK_BRAND)
     .maybeSingle();
@@ -150,6 +311,10 @@ async function handleApproveCommand(chatId: number, publicId: string): Promise<v
   }
   if (!task) {
     await sendTelegramMessage(chatId, `No task found with id ${publicId}.`);
+    return;
+  }
+  if (!APPROVABLE_STATUSES.has(task.status)) {
+    await sendTelegramMessage(chatId, `Can't approve ${publicId} -- current status is "${task.status}".`);
     return;
   }
 
@@ -184,17 +349,19 @@ async function handleApproveCommand(chatId: number, publicId: string): Promise<v
     return;
   }
 
+  const commitNote = await commitWebsiteDraftIfApplicable(task, publicId, draft, `${publicId}: first draft`);
+
   const preview = draft.length > 1200 ? draft.slice(0, 1200) + '…' : draft;
   await sendTelegramMessage(
     chatId,
-    `Draft ready for "${task.title}" (${task.task_type}) — ${publicId}, status: review\n\n${preview}`
+    `Draft ready for "${task.title}" (${task.task_type}) — ${publicId}, status: review\n\n${preview}${commitNote}`
   );
 }
 
 async function handleRejectCommand(chatId: number, publicId: string): Promise<void> {
   const { data: task, error: fetchError } = await supabaseAdmin
     .from('manager_tasks')
-    .select('id')
+    .select('id, status')
     .eq('public_id', publicId)
     .eq('brand', TASK_BRAND)
     .maybeSingle();
@@ -206,6 +373,10 @@ async function handleRejectCommand(chatId: number, publicId: string): Promise<vo
   }
   if (!task) {
     await sendTelegramMessage(chatId, `No task found with id ${publicId}.`);
+    return;
+  }
+  if (!APPROVABLE_STATUSES.has(task.status)) {
+    await sendTelegramMessage(chatId, `Can't reject ${publicId} -- current status is "${task.status}".`);
     return;
   }
 
@@ -224,13 +395,15 @@ async function handleRejectCommand(chatId: number, publicId: string): Promise<vo
 }
 
 // Returns true if this message was handled as a draft-patch request
-// (whether it succeeded or failed) -- false only when publicId doesn't
-// match a real task, so the caller can fall through to ordinary chat
-// handling instead of silently dropping the message.
-async function tryHandleDraftPatch(chatId: number, publicId: string, requestedChange: string): Promise<boolean> {
+// (whether it succeeded or failed) -- false when publicId doesn't match
+// a real task, OR when the sender isn't authorized for it, so the
+// caller falls through to ordinary chat handling instead of confirming
+// a task's existence (or lack of authorization) to someone who
+// shouldn't be able to tell either way.
+async function tryHandleDraftPatch(chatId: number, fromId: number | undefined, publicId: string, requestedChange: string): Promise<boolean> {
   const { data: task, error: fetchError } = await supabaseAdmin
     .from('manager_tasks')
-    .select('id, draft_text')
+    .select('id, draft_text, task_type, external_id')
     .eq('public_id', publicId)
     .eq('brand', TASK_BRAND)
     .maybeSingle();
@@ -240,6 +413,9 @@ async function tryHandleDraftPatch(chatId: number, publicId: string, requestedCh
     return false;
   }
   if (!task) return false;
+
+  const authorized = isOwner(fromId) || (task.external_id !== null && fromId !== undefined && String(fromId) === task.external_id);
+  if (!authorized) return false;
 
   let updatedDraft: string;
   try {
@@ -261,8 +437,10 @@ async function tryHandleDraftPatch(chatId: number, publicId: string, requestedCh
     return true;
   }
 
+  const commitNote = await commitWebsiteDraftIfApplicable(task, publicId, updatedDraft, `${publicId}: patch draft`);
+
   const preview = updatedDraft.length > 800 ? updatedDraft.slice(0, 800) + '…' : updatedDraft;
-  await sendTelegramMessage(chatId, `Updated draft for ${publicId}:\n\n${preview}`);
+  await sendTelegramMessage(chatId, `Updated draft for ${publicId}:\n\n${preview}${commitNote}`);
   return true;
 }
 
@@ -301,7 +479,8 @@ export async function handleRequest(req: Request): Promise<Response> {
   }
 
   const trimmed = text.trim();
-  const owner = isOwner(message?.from?.id);
+  const fromId = message?.from?.id;
+  const owner = isOwner(fromId);
 
   try {
     if (owner && STATUS_PATTERN.test(trimmed)) {
@@ -323,19 +502,20 @@ export async function handleRequest(req: Request): Promise<Response> {
       }
     }
 
-    // Inline draft-edit shortcut: any sender (owner or not) mentioning a
-    // real task id plus additional text patches that task's draft_text
-    // directly -- it never creates a new task and never runs the normal
-    // conversational reply for that message. Skipped for anything that
-    // looks like an /approve or /reject attempt (including a non-owner's
-    // attempt at one) -- that text is a command, not a requested edit,
-    // even though it still matches TASK_ID_PATTERN.
+    // Inline draft-edit shortcut: the owner, or the task's own original
+    // requester (external_id), mentioning a real task id plus additional
+    // text patches that task's draft_text directly -- it never creates a
+    // new task and never runs the normal conversational reply for that
+    // message. Skipped for anything that looks like an /approve or
+    // /reject attempt (including a non-owner's attempt at one) -- that
+    // text is a command, not a requested edit, even though it still
+    // matches TASK_ID_PATTERN.
     const looksLikeOwnerCommand = APPROVE_PATTERN.test(trimmed) || REJECT_PATTERN.test(trimmed);
     const taskIdMatch = !looksLikeOwnerCommand ? trimmed.match(TASK_ID_PATTERN) : null;
     if (taskIdMatch) {
       const requestedChange = trimmed.replace(taskIdMatch[0], '').trim();
       if (requestedChange) {
-        const handled = await tryHandleDraftPatch(chatId, taskIdMatch[0].toUpperCase(), requestedChange);
+        const handled = await tryHandleDraftPatch(chatId, fromId, taskIdMatch[0].toUpperCase(), requestedChange);
         if (handled) return new Response('ok');
       }
     }
