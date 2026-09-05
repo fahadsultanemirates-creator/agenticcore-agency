@@ -111,7 +111,7 @@ async function renderProjectsPanel(userId) {
       el.className = 'request-card';
       el.innerHTML = `
         <div>
-          <h4>${r.service_category} — ${r.tier} tier</h4>
+          <h4>${r.service_category}</h4>
           <p>Submitted ${formatDate(r.created_at)}</p>
         </div>
         ${statusPill(r.status)}
@@ -348,7 +348,7 @@ function renderPaymentCTA(container, { requestId, amountDue, payram }) {
   container.appendChild(wrap);
 }
 
-// Generic service->task->tier->details->submit catalog wizard, shared by
+// Generic service->task->details->submit catalog wizard, shared by
 // the New Request tab (full price) and the Packages tab's 50%-off add-on
 // flow (same steps, discounted price + a note on the order).
 function initCatalogWizard(cfg) {
@@ -360,7 +360,7 @@ function initCatalogWizard(cfg) {
     pointsNote.textContent = `You have ${formatMoney(cfg.profile.points_balance)} in Points. Check this box and we'll apply up to that amount when your price is finalized.`;
   }
 
-  const state = { category: null, taskType: null, tier: null };
+  const state = { category: null, taskType: null };
   let currentStep = 1;
 
   const stepEls = document.querySelectorAll(cfg.stepsSelector);
@@ -368,8 +368,8 @@ function initCatalogWizard(cfg) {
   const backBtn = el(cfg.backBtnId);
   const nextBtn = el(cfg.nextBtnId);
 
-  function priceFor(tier, item) {
-    return Math.round(item[tier] * cfg.priceMultiplier * 100) / 100;
+  function priceFor(item) {
+    return Math.round(item.price * cfg.priceMultiplier * 100) / 100;
   }
 
   function goToStep(n) {
@@ -377,8 +377,8 @@ function initCatalogWizard(cfg) {
     stepEls.forEach((stepEl) => stepEl.classList.toggle('active', Number(stepEl.dataset.step) === n));
     indicatorEls.forEach((indEl) => indEl.classList.toggle('active', Number(indEl.dataset.step) === n));
     backBtn.style.display = n > 1 ? 'inline-block' : 'none';
-    nextBtn.style.display = n === 4 ? 'inline-block' : 'none';
-    if (n === 5) renderSummary();
+    nextBtn.style.display = n === 3 ? 'inline-block' : 'none';
+    if (n === 4) renderSummary();
   }
 
   function renderServiceOptions() {
@@ -393,7 +393,6 @@ function initCatalogWizard(cfg) {
       btn.addEventListener('click', () => {
         state.category = cat.category;
         state.taskType = null;
-        state.tier = null;
         renderServiceOptions();
         renderTaskOptions();
         goToStep(2);
@@ -412,33 +411,11 @@ function initCatalogWizard(cfg) {
       btn.type = 'button';
       btn.className = 'wizard-option-card';
       if (item.name === state.taskType) btn.classList.add('selected');
-      btn.innerHTML = `<span>${escapeHtml(item.name)}</span><span class="wizard-option-price">${formatMoney(priceFor('low', item))} – ${formatMoney(priceFor('high', item))}</span>`;
+      btn.innerHTML = `<span>${escapeHtml(item.name)}</span><span class="wizard-option-price">${formatMoney(priceFor(item))}</span>`;
       btn.addEventListener('click', () => {
         state.taskType = item.name;
-        state.tier = null;
         renderTaskOptions();
-        renderTierOptions();
         goToStep(3);
-      });
-      optsEl.appendChild(btn);
-    });
-  }
-
-  function renderTierOptions() {
-    const optsEl = el(cfg.tierOptionsId);
-    optsEl.innerHTML = '';
-    const item = getCatalogItem(state.category, state.taskType);
-    if (!item) return;
-    ['low', 'mid', 'high'].forEach((tier) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'wizard-option-card';
-      if (tier === state.tier) btn.classList.add('selected');
-      btn.innerHTML = `<span>${escapeHtml(TIER_LABELS[tier])}</span><span class="wizard-option-price">${formatMoney(priceFor(tier, item))}</span>`;
-      btn.addEventListener('click', () => {
-        state.tier = tier;
-        renderTierOptions();
-        goToStep(4);
       });
       optsEl.appendChild(btn);
     });
@@ -446,14 +423,13 @@ function initCatalogWizard(cfg) {
 
   function renderSummary() {
     const item = getCatalogItem(state.category, state.taskType);
-    const price = item ? priceFor(state.tier, item) : 0;
+    const price = item ? priceFor(item) : 0;
     const description = el(cfg.descriptionId).value.trim();
     const file = el(cfg.attachmentId).files[0];
     const summaryEl = el(cfg.summaryId);
     summaryEl.innerHTML = `
       <dt>Service</dt><dd>${escapeHtml(state.category)}</dd>
       <dt>Task</dt><dd>${escapeHtml(state.taskType)}</dd>
-      <dt>Tier</dt><dd>${escapeHtml(TIER_LABELS[state.tier])}</dd>
       <dt>Price</dt><dd>${formatMoney(price)}${cfg.discountNote ? ' <span style="color:var(--text-tertiary);font-size:0.8rem;">(50% off applied)</span>' : ''}</dd>
       <dt>Description</dt><dd>${escapeHtml(description) || '<em>None provided</em>'}</dd>
       ${file ? `<dt>Attachment</dt><dd>${escapeHtml(file.name)}</dd>` : ''}
@@ -473,7 +449,7 @@ function initCatalogWizard(cfg) {
       return;
     }
     errorEl.style.display = 'none';
-    goToStep(5);
+    goToStep(4);
   });
 
   el(cfg.submitBtnId).addEventListener('click', async () => {
@@ -521,7 +497,7 @@ function initCatalogWizard(cfg) {
       attachmentStatus.textContent = '';
     }
 
-    const agreedPrice = priceFor(state.tier, item);
+    const agreedPrice = priceFor(item);
 
     const { data: insertedRequest, error } = await supabaseClient
       .from('requests')
@@ -529,7 +505,7 @@ function initCatalogWizard(cfg) {
         user_id: cfg.profile.id,
         service_category: state.category,
         task_type: state.taskType,
-        tier: tierDbValue(state.tier),
+        tier: LEGACY_TIER_DB_VALUE,
         description,
         agreed_price: agreedPrice,
         status: 'awaiting_payment',
@@ -553,7 +529,6 @@ function initCatalogWizard(cfg) {
 
     state.category = null;
     state.taskType = null;
-    state.tier = null;
     el(cfg.descriptionId).value = '';
     attachmentInput.value = '';
     if (cfg.applyPointsToggleId) el(cfg.applyPointsToggleId).checked = false;
@@ -698,7 +673,6 @@ function initNewRequestWizard(profile) {
     indicatorSelector: '#wizardStepsIndicator li',
     serviceOptionsId: 'wizardServiceOptions',
     taskOptionsId: 'wizardTaskOptions',
-    tierOptionsId: 'wizardTierOptions',
     descriptionId: 'reqDescription',
     attachmentId: 'reqAttachment',
     attachmentStatusId: 'attachmentStatus',
@@ -720,7 +694,7 @@ function initNewRequestWizard(profile) {
 
 // -------- AgenticCore Packages tab --------
 function initPackagesTab(profile) {
-  const state = { tier: null };
+  const state = { selected: false };
   let currentStep = 1;
 
   const stepEls = document.querySelectorAll('#packageWizard .wizard-step');
@@ -740,28 +714,25 @@ function initPackagesTab(profile) {
   function renderPackageOptions() {
     const optsEl = document.getElementById('packageOptions');
     optsEl.innerHTML = '';
-    AGENTICCORE_PACKAGES.forEach((pkg) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'wizard-option-card';
-      if (pkg.tier === state.tier) btn.classList.add('selected');
-      btn.innerHTML = `<span>${escapeHtml(pkg.label)}</span><span class="wizard-option-price">${formatMoney(pkg.price)}</span>`;
-      btn.addEventListener('click', () => {
-        state.tier = pkg.tier;
-        renderPackageOptions();
-        goToStep(2);
-      });
-      optsEl.appendChild(btn);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'wizard-option-card';
+    if (state.selected) btn.classList.add('selected');
+    btn.innerHTML = `<span>${escapeHtml(AGENTICCORE_PACKAGE.label)}</span><span class="wizard-option-price">${formatMoney(AGENTICCORE_PACKAGE.price)}</span>`;
+    btn.addEventListener('click', () => {
+      state.selected = true;
+      renderPackageOptions();
+      goToStep(2);
     });
+    optsEl.appendChild(btn);
   }
 
   function renderSummary() {
-    const pkg = AGENTICCORE_PACKAGES.find((p) => p.tier === state.tier);
     const description = document.getElementById('pkgDescription').value.trim();
     const file = document.getElementById('pkgAttachment').files[0];
     document.getElementById('packageSummary').innerHTML = `
-      <dt>Package</dt><dd>${escapeHtml(pkg.label)}</dd>
-      <dt>Price</dt><dd>${formatMoney(pkg.price)}</dd>
+      <dt>Package</dt><dd>${escapeHtml(AGENTICCORE_PACKAGE.label)}</dd>
+      <dt>Price</dt><dd>${formatMoney(AGENTICCORE_PACKAGE.price)}</dd>
       <dt>Description</dt><dd>${escapeHtml(description) || '<em>None provided</em>'}</dd>
       ${file ? `<dt>Attachment</dt><dd>${escapeHtml(file.name)}</dd>` : ''}
     `;
@@ -779,7 +750,6 @@ function initPackagesTab(profile) {
     errorEl.style.display = 'none';
     successEl.style.display = 'none';
 
-    const pkg = AGENTICCORE_PACKAGES.find((p) => p.tier === state.tier);
     const description = document.getElementById('pkgDescription').value.trim();
     const attachmentInput = document.getElementById('pkgAttachment');
     const attachmentStatus = document.getElementById('pkgAttachmentStatus');
@@ -815,9 +785,9 @@ function initPackagesTab(profile) {
       .insert({
         user_id: profile.id,
         service_category: 'AgenticCore Package',
-        tier: pkg.tier,
-        description: `${pkg.label} package order — priority handling, no additional scoping needed.${description ? ' ' + description : ''}`,
-        agreed_price: pkg.price,
+        tier: LEGACY_TIER_DB_VALUE,
+        description: `${AGENTICCORE_PACKAGE.label} package order — priority handling, no additional scoping needed.${description ? ' ' + description : ''}`,
+        agreed_price: AGENTICCORE_PACKAGE.price,
         status: 'awaiting_payment',
         attachment_path: attachmentPath
       })
@@ -837,7 +807,7 @@ function initPackagesTab(profile) {
     btn.disabled = false;
     btn.textContent = originalLabel;
 
-    state.tier = null;
+    state.selected = false;
     document.getElementById('pkgDescription').value = '';
     attachmentInput.value = '';
     renderPackageOptions();
@@ -845,7 +815,7 @@ function initPackagesTab(profile) {
 
     successEl.textContent = 'Package order submitted — you can now add extra services at 50% off below, and track your order under My Projects.';
     successEl.style.display = 'block';
-    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(pkg.price), payram: paymentResult });
+    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(AGENTICCORE_PACKAGE.price), payram: paymentResult });
     unlockAddonSection(profile);
     renderProjectsPanel(profile.id);
   });
@@ -866,7 +836,6 @@ function unlockAddonSection(profile) {
     indicatorSelector: '#addonStepsIndicator li',
     serviceOptionsId: 'addonServiceOptions',
     taskOptionsId: 'addonTaskOptions',
-    tierOptionsId: 'addonTierOptions',
     descriptionId: 'addonDescription',
     attachmentId: 'addonAttachment',
     attachmentStatusId: 'addonAttachmentStatus',
