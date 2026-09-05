@@ -3,114 +3,113 @@
 // constants rather than a DB table: pricing is a display/computation
 // concern, not something that should need a migration to change.
 //
-// Tier keys are 'low' / 'mid' / 'high' (matching the price sheet). The
-// `requests.tier` column's check constraint expects 'low' | 'mid' | 'top'
-// (see packages.js, which already maps its "High" package to 'top') --
-// TIER_DB_VALUE below does that same mapping for catalog items.
+// Single standard price per service (the former 3-tier Low/Mid/High
+// system was removed -- every price below is what used to be the Low
+// tier's number). requests.tier is still a real, not-null DB column
+// with a check constraint of ('low', 'mid', 'top') from before the
+// tier system existed, but nothing here lets a client choose one
+// anymore -- LEGACY_TIER_DB_VALUE is written on every new insert
+// purely to satisfy that constraint, chosen as 'low' since that's
+// exactly the value this pricing was already keyed on. Reusing an
+// already-allowed value like this avoids a schema migration entirely.
 
 const PRICING_CATALOG = [
   {
     category: 'Websites',
     items: [
-      { name: 'Single landing page website', low: 50, mid: 100, high: 150 },
-      { name: 'Multi-page website (3-5 pages)', low: 150, mid: 250, high: 350 },
-      { name: 'Multi-page website (6-10 pages)', low: 300, mid: 500, high: 800 },
-      { name: 'E-commerce website', low: 800, mid: 1200, high: 1800 },
-      { name: 'Custom dashboard / web app', low: 1000, mid: 1750, high: 2500 },
-      { name: 'Website redesign', low: 200, mid: 400, high: 800 },
-      { name: 'Blog setup', low: 50, mid: 100, high: 200 },
-      { name: 'Domain + hosting setup (one-time)', low: 30, mid: 50, high: 100 },
-      { name: 'Website maintenance (monthly)', low: 20, mid: 40, high: 100 }
+      { name: 'Single landing page website', price: 50 },
+      { name: 'Multi-page website (3-5 pages)', price: 150 },
+      { name: 'Multi-page website (6-10 pages)', price: 300 },
+      { name: 'E-commerce website', price: 800 },
+      { name: 'Custom dashboard / web app', price: 1000 },
+      { name: 'Website redesign', price: 200 },
+      { name: 'Blog setup', price: 50 },
+      { name: 'Domain + hosting setup (one-time)', price: 30 },
+      { name: 'Website maintenance (monthly)', price: 20 }
     ]
   },
   {
     category: 'Design & Media',
     items: [
-      { name: 'Logo design', low: 5, mid: 10, high: 20 },
-      { name: 'Business card design', low: 5, mid: 10, high: 20 },
-      { name: 'Letterhead or receipt design', low: 5, mid: 10, high: 20 },
-      { name: 'Brand style guide', low: 20, mid: 40, high: 80 },
-      { name: 'Social media single post', low: 5, mid: 10, high: 20 },
-      { name: 'Social media post pack (5 posts)', low: 25, mid: 50, high: 80 },
-      { name: 'Social media post pack (10 posts)', low: 50, mid: 80, high: 140 },
-      { name: 'Social media post pack (20 posts)', low: 75, mid: 120, high: 200 },
-      { name: 'Marketing banner', low: 5, mid: 10, high: 20 },
-      { name: 'Video (8-15 sec)', low: 15, mid: 30, high: 60 },
-      { name: 'Video (30-60 sec)', low: 40, mid: 80, high: 130 },
-      { name: 'Photo editing', low: 5, mid: 10, high: 15 },
-      { name: 'PDF proposal design', low: 15, mid: 25, high: 40 },
-      { name: 'PDF report design', low: 15, mid: 25, high: 40 },
-      { name: 'PDF brochure design', low: 25, mid: 40, high: 80 },
-      { name: 'Email (design)', low: 5, mid: 10, high: 20 }
+      { name: 'Logo design', price: 5 },
+      { name: 'Business card design', price: 5 },
+      { name: 'Letterhead or receipt design', price: 5 },
+      { name: 'Brand style guide', price: 20 },
+      { name: 'Social media single post', price: 5 },
+      { name: 'Social media post pack (5 posts)', price: 25 },
+      { name: 'Social media post pack (10 posts)', price: 50 },
+      { name: 'Social media post pack (20 posts)', price: 75 },
+      { name: 'Marketing banner', price: 5 },
+      { name: 'Video (8-15 sec)', price: 15 },
+      { name: 'Video (30-60 sec)', price: 40 },
+      { name: 'Photo editing', price: 5 },
+      { name: 'PDF proposal design', price: 15 },
+      { name: 'PDF report design', price: 15 },
+      { name: 'PDF brochure design', price: 25 },
+      { name: 'Email (design)', price: 5 }
     ]
   },
   {
     category: 'Marketing',
     label: 'Marketing (AgenticCore Biz)',
     items: [
-      { name: 'Social media handling (monthly)', low: 60, mid: 100, high: 180 },
-      { name: 'Auto social media posting (monthly)', low: 50, mid: 80, high: 160 },
-      { name: 'Marketing strategy & feasibility plan', low: 25, mid: 50, high: 100 },
-      { name: 'Full marketing management retainer (monthly)', low: 180, mid: 300, high: 600 },
-      { name: 'Ad campaign management (monthly)', low: 60, mid: 100, high: 160 },
-      { name: 'SEO optimization (one-time)', low: 60, mid: 100, high: 160 },
-      { name: 'SEO maintenance (monthly)', low: 50, mid: 100, high: 160 },
-      { name: 'AI marketing framework build', low: 350, mid: 700, high: 1300 },
-      { name: 'AI marketing framework maintenance (monthly)', low: 50, mid: 100, high: 160 },
-      { name: 'Email marketing setup', low: 25, mid: 50, high: 80 }
+      { name: 'Social media handling (monthly)', price: 60 },
+      { name: 'Auto social media posting (monthly)', price: 50 },
+      { name: 'Marketing strategy & feasibility plan', price: 25 },
+      { name: 'Full marketing management retainer (monthly)', price: 180 },
+      { name: 'Ad campaign management (monthly)', price: 60 },
+      { name: 'SEO optimization (one-time)', price: 60 },
+      { name: 'SEO maintenance (monthly)', price: 50 },
+      { name: 'AI marketing framework build', price: 350 },
+      { name: 'AI marketing framework maintenance (monthly)', price: 50 },
+      { name: 'Email marketing setup', price: 25 }
     ]
   },
   {
     category: 'Bookkeeping & Reports',
     items: [
-      { name: 'Bookkeeping cleanup', low: 60, mid: 100, high: 160 },
-      { name: 'Ongoing bookkeeping (monthly)', low: 50, mid: 100, high: 260 },
-      { name: 'Monthly balance sheet', low: 30, mid: 60, high: 100 },
-      { name: 'Yearly balance sheet / annual report', low: 100, mid: 200, high: 350 },
-      { name: 'Invoicing & receipts setup', low: 25, mid: 50, high: 100 },
-      { name: 'Payroll setup', low: 50, mid: 100, high: 140 },
-      { name: 'Tax preparation support', low: 60, mid: 120, high: 170 }
+      { name: 'Bookkeeping cleanup', price: 60 },
+      { name: 'Ongoing bookkeeping (monthly)', price: 50 },
+      { name: 'Monthly balance sheet', price: 30 },
+      { name: 'Yearly balance sheet / annual report', price: 100 },
+      { name: 'Invoicing & receipts setup', price: 25 },
+      { name: 'Payroll setup', price: 50 },
+      { name: 'Tax preparation support', price: 60 }
     ]
   },
   {
     category: 'Audits & Feasibility Reports',
     items: [
-      { name: 'Business feasibility report', low: 40, mid: 80, high: 130 },
-      { name: 'Business audit', low: 50, mid: 100, high: 150 },
-      { name: 'Market research report', low: 40, mid: 80, high: 130 },
-      { name: 'Competitor analysis report', low: 30, mid: 55, high: 80 },
-      { name: 'Real estate project feasibility report', low: 100, mid: 200, high: 400 }
+      { name: 'Business feasibility report', price: 40 },
+      { name: 'Business audit', price: 50 },
+      { name: 'Market research report', price: 40 },
+      { name: 'Competitor analysis report', price: 30 },
+      { name: 'Real estate project feasibility report', price: 100 }
     ]
   },
   {
     category: 'Custom AI Agents',
     items: [
-      { name: 'Single-task AI agent', low: 150, mid: 300, high: 500 },
-      { name: 'Multi-agent framework (2-4 agents)', low: 500, mid: 800, high: 1200 },
-      { name: 'Multi-agent framework (full business system)', low: 1000, mid: 1600, high: 2500 },
-      { name: 'Telegram/WhatsApp customer support agent', low: 200, mid: 350, high: 500 },
-      { name: 'Voice AI agent', low: 300, mid: 500, high: 700 },
-      { name: 'Agent hosting & maintenance (monthly)', low: 25, mid: 40, high: 80 },
-      { name: 'Framework handover (client owns & runs it)', low: 150, mid: 250, high: 400 }
+      { name: 'Single-task AI agent', price: 150 },
+      { name: 'Multi-agent framework (2-4 agents)', price: 500 },
+      { name: 'Multi-agent framework (full business system)', price: 1000 },
+      { name: 'Telegram/WhatsApp customer support agent', price: 200 },
+      { name: 'Voice AI agent', price: 300 },
+      { name: 'Agent hosting & maintenance (monthly)', price: 25 },
+      { name: 'Framework handover (client owns & runs it)', price: 150 }
     ]
   }
 ];
 
-// Flat AgenticCore bundle packages -- quality-only tier difference, same
-// deliverables at every tier (see packages.html / packages.js). Keyed by
-// the same low/mid/top values already used in requests.tier.
-const AGENTICCORE_PACKAGES = [
-  { tier: 'low', label: 'AgenticCore Low', price: 150 },
-  { tier: 'mid', label: 'AgenticCore Mid', price: 300 },
-  { tier: 'top', label: 'AgenticCore High', price: 600 }
-];
+// Single flat AgenticCore bundle package (the former Low $150 / Mid
+// $300 / High $600 tiers collapsed into one) -- same deliverables as
+// before, at the former Low tier's price.
+const AGENTICCORE_PACKAGE = { label: 'AgenticCore Package', price: 150 };
 
-const TIER_LABELS = { low: 'Low — fast & essential', mid: 'Mid — balanced & customized', high: 'High — premium & hands-on' };
-
-// requests.tier check constraint expects 'low' | 'mid' | 'top'.
-function tierDbValue(tier) {
-  return tier === 'high' ? 'top' : tier;
-}
+// See the file-level comment above -- 'low' satisfies requests.tier's
+// existing not-null check constraint; the tier concept it used to
+// represent no longer exists anywhere else in the app.
+const LEGACY_TIER_DB_VALUE = 'low';
 
 function getCatalogCategory(category) {
   return PRICING_CATALOG.find((c) => c.category === category) || null;

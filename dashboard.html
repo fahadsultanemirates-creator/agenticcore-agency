@@ -120,9 +120,8 @@
           <ol class="wizard-steps" id="wizardStepsIndicator">
             <li data-step="1" class="active">1. Service</li>
             <li data-step="2">2. Task</li>
-            <li data-step="3">3. Tier</li>
-            <li data-step="4">4. Details</li>
-            <li data-step="5">5. Submit</li>
+            <li data-step="3">3. Details</li>
+            <li data-step="4">4. Submit</li>
           </ol>
 
           <div class="wizard-step active" data-step="1">
@@ -136,11 +135,6 @@
           </div>
 
           <div class="wizard-step" data-step="3">
-            <h3>Choose a tier</h3>
-            <div class="wizard-options" id="wizardTierOptions"></div>
-          </div>
-
-          <div class="wizard-step" data-step="4">
             <h3>Tell us what you need</h3>
             <div class="field-group">
               <label for="reqDescription">Describe what you need</label>
@@ -160,7 +154,7 @@
             </div>
           </div>
 
-          <div class="wizard-step" data-step="5">
+          <div class="wizard-step" data-step="4">
             <h3>Review &amp; submit</h3>
             <dl class="wizard-summary-list" id="wizardSummary"></dl>
             <button type="button" class="btn btn-primary" id="submitRequestBtn">Submit request</button>
@@ -175,7 +169,7 @@
 
       <div class="dash-panel" id="panel-packages">
         <h2>AgenticCore Packages</h2>
-        <div class="dash-note">Fixed-price bundles — every tier includes the exact same deliverables, priced only by execution quality. Every package includes 50% off any additional service. <a href="packages.html">See full package details →</a></div>
+        <div class="dash-note">One fixed-price bundle, starting from $150 — 50% off any additional service included. <a href="packages.html">See full package details →</a></div>
         <div class="dash-error" id="packageError"></div>
         <div class="dash-success" id="packageSuccess"></div>
 
@@ -226,9 +220,8 @@
             <ol class="wizard-steps" id="addonStepsIndicator">
               <li data-step="1" class="active">1. Service</li>
               <li data-step="2">2. Task</li>
-              <li data-step="3">3. Tier</li>
-              <li data-step="4">4. Details</li>
-              <li data-step="5">5. Submit</li>
+              <li data-step="3">3. Details</li>
+              <li data-step="4">4. Submit</li>
             </ol>
 
             <div class="wizard-step active" data-step="1">
@@ -242,11 +235,6 @@
             </div>
 
             <div class="wizard-step" data-step="3">
-              <h3>Choose a tier</h3>
-              <div class="wizard-options" id="addonTierOptions"></div>
-            </div>
-
-            <div class="wizard-step" data-step="4">
               <h3>Tell us what you need</h3>
               <div class="field-group">
                 <label for="addonDescription">Describe what you need</label>
@@ -259,7 +247,7 @@
               </div>
             </div>
 
-            <div class="wizard-step" data-step="5">
+            <div class="wizard-step" data-step="4">
               <h3>Review &amp; submit</h3>
               <dl class="wizard-summary-list" id="addonSummary"></dl>
               <button type="button" class="btn btn-primary" id="submitAddonBtn">Submit at 50% off</button>
@@ -277,7 +265,7 @@
 
       <div class="dash-panel" id="panel-billing">
         <h2>Billing history</h2>
-        <div class="dash-note">Billing follows 30% upfront, 70% on completion, across every tier and package. <a href="terms.html">Read the full payment &amp; delivery policy →</a></div>
+        <div class="dash-note">Billing follows 30% upfront, 70% on completion, for every service and package. <a href="terms.html">Read the full payment &amp; delivery policy →</a></div>
         <p class="dash-empty" id="billingEmpty">No billing activity yet.</p>
         <div class="billing-list" id="billingList"></div>
       </div>

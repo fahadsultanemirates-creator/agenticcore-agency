@@ -98,42 +98,24 @@
   border-color: var(--accent-cyan);
 }
 
-/* Comparison table for tiers page */
-.tier-table {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin: var(--space-xl) 0;
-}
-
-.tier-card {
+/* Single-package display card (packages.html) -- one flat AgenticCore
+   Package replaced the former 3-column Low/Mid/High tier comparison
+   table, so this is a single centered card rather than a grid. */
+.package-card {
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: var(--space-lg);
+  max-width: 420px;
+  margin: var(--space-xl) 0;
 }
 
-.tier-card.featured {
-  border-color: rgba(34, 211, 238, 0.4);
-  background: linear-gradient(160deg, var(--bg-panel), rgba(34, 211, 238, 0.04));
-}
-
-.tier-card .tier-name {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent-cyan);
-  display: block;
-  margin-bottom: var(--space-xs);
-}
-
-.tier-card h3 {
+.package-card h3 {
   font-size: 1.3rem;
   margin-bottom: var(--space-sm);
 }
 
-.tier-card ul {
+.package-card ul {
   list-style: none;
   display: flex;
   flex-direction: column;
@@ -141,14 +123,14 @@
   margin-top: var(--space-md);
 }
 
-.tier-card ul li {
+.package-card ul li {
   font-size: 0.88rem;
   color: var(--text-secondary);
   padding-left: 1.1rem;
   position: relative;
 }
 
-.tier-card ul li::before {
+.package-card ul li::before {
   content: '—';
   position: absolute;
   left: 0;
@@ -161,15 +143,9 @@
   margin-top: var(--space-md);
 }
 
-.tier-card .btn {
+.package-card .btn {
   width: 100%;
   margin-top: var(--space-md);
-}
-
-@media (max-width: 860px) {
-  .tier-table {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* Referral levels diagram */
