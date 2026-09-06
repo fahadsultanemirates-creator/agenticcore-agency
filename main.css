@@ -149,6 +149,14 @@ img, svg {
   height: 28px;
 }
 
+.nav-logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
 .nav-links {
   display: flex;
   align-items: center;
@@ -649,6 +657,39 @@ section {
   color: var(--text-secondary);
   font-size: 0.88rem;
   max-width: 280px;
+}
+
+/* Flex + wrap rather than a fixed-count row, so more icons can be added
+   later without restructuring this section. */
+.footer-social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: var(--space-md);
+}
+
+.footer-social-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--bg-panel-hover);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.footer-social-link svg {
+  width: 17px;
+  height: 17px;
+}
+
+.footer-social-link:hover {
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  background: var(--bg-panel);
 }
 
 .footer-col h5 {

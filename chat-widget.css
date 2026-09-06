@@ -216,3 +216,56 @@
     height: min(480px, calc(100vh - 120px));
   }
 }
+
+/* ============================================
+   Support email button -- sits beside the chat toggle, same fixed
+   bottom-right cluster.
+   ============================================ */
+
+.support-email-fab {
+  position: fixed;
+  right: calc(var(--space-md) + 56px + 0.6rem);
+  bottom: var(--space-md);
+  z-index: 199;
+  height: 56px;
+  padding: 0 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.support-email-fab:hover {
+  border-color: var(--accent-cyan);
+  transform: translateY(-2px);
+}
+
+.support-email-fab svg {
+  width: 20px;
+  height: 20px;
+  color: var(--accent-cyan);
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .support-email-fab {
+    right: calc(var(--space-sm) + 56px + 0.5rem);
+    bottom: var(--space-sm);
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    justify-content: center;
+  }
+  .support-email-fab span {
+    display: none;
+  }
+}
