@@ -12,6 +12,15 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const PAYRAM_API_KEY = Deno.env.get('PAYRAM_API_KEY')!;
 
+// agenticcore.biz shares this same PayRam instance/webhook. Its payments
+// are created with an invoiceID prefixed "biz-", so a confirmation for one
+// of those is never .agency's own -- it's relayed, raw and unprocessed, to
+// .biz's own payram-webhook function instead. Both projects set the same
+// INTERNAL_RELAY_SECRET value so .biz's function can trust the relay.
+const BIZ_PAYRAM_WEBHOOK_URL = Deno.env.get('BIZ_PAYRAM_WEBHOOK_URL');
+const INTERNAL_RELAY_SECRET = Deno.env.get('INTERNAL_RELAY_SECRET');
+const BIZ_INVOICE_PREFIX = 'biz-';
+
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // Only these move a request forward. OPEN/PARTIALLY_FILLED/CANCELLED
@@ -40,6 +49,35 @@ function constantTimeEqual(a: string, b: string): boolean {
     diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   }
   return diff === 0;
+}
+
+// Pure pass-through: .biz's own payram-webhook does its own status
+// filtering and idempotency, exactly like this function does for its own
+// events, so this forwards the raw body unmodified rather than only the
+// confirming-status case. Never throws -- a relay failure is logged, not
+// surfaced to PayRam (see caller).
+async function relayToBiz(rawBody: string, contentType: string | null): Promise<void> {
+  if (!BIZ_PAYRAM_WEBHOOK_URL || !INTERNAL_RELAY_SECRET) {
+    console.error('payram-webhook: cannot relay to .biz -- BIZ_PAYRAM_WEBHOOK_URL/INTERNAL_RELAY_SECRET not set');
+    return;
+  }
+
+  try {
+    const resp = await fetch(BIZ_PAYRAM_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': contentType || 'application/json',
+        'X-Internal-Relay-Secret': INTERNAL_RELAY_SECRET
+      },
+      body: rawBody
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      console.error(`payram-webhook: relay to .biz failed (${resp.status}):`, text.slice(0, 500));
+    }
+  } catch (err) {
+    console.error('payram-webhook: relay to .biz errored', err);
+  }
 }
 
 export async function handleRequest(req: Request): Promise<Response> {
@@ -74,6 +112,13 @@ export async function handleRequest(req: Request): Promise<Response> {
   const status = payload?.status;
 
   if (!invoiceId || typeof invoiceId !== 'string') {
+    return new Response('ok');
+  }
+
+  // Not .agency's own -- relay as-is and stop, before any of the
+  // .agency-specific lookup/status logic below runs.
+  if (invoiceId.startsWith(BIZ_INVOICE_PREFIX)) {
+    await relayToBiz(rawBody, req.headers.get('Content-Type'));
     return new Response('ok');
   }
 
