@@ -12,14 +12,22 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const PAYRAM_API_KEY = Deno.env.get('PAYRAM_API_KEY')!;
 
-// agenticcore.biz shares this same PayRam instance/webhook. Its payments
-// are created with an invoiceID prefixed "biz-", so a confirmation for one
-// of those is never .agency's own -- it's relayed, raw and unprocessed, to
-// .biz's own payram-webhook function instead. Both projects set the same
-// INTERNAL_RELAY_SECRET value so .biz's function can trust the relay.
+// agenticcore.biz and mmcore.agency both share this same PayRam
+// instance/webhook. Their payments are created with an invoiceID
+// prefixed "biz-" / "mmcore-", so a confirmation for one of those is
+// never .agency's own -- it's relayed, raw and unprocessed, to that
+// project's own payram-webhook function instead. Each relay target gets
+// its own secret (INTERNAL_RELAY_SECRET for .biz, MMCORE_INTERNAL_RELAY_SECRET
+// for M&MCore) rather than sharing one across all three projects, so a
+// leaked secret on one side can't be used to forge relay calls meant for
+// the other.
 const BIZ_PAYRAM_WEBHOOK_URL = Deno.env.get('BIZ_PAYRAM_WEBHOOK_URL');
 const INTERNAL_RELAY_SECRET = Deno.env.get('INTERNAL_RELAY_SECRET');
 const BIZ_INVOICE_PREFIX = 'biz-';
+
+const MMCORE_PAYRAM_WEBHOOK_URL = Deno.env.get('MMCORE_PAYRAM_WEBHOOK_URL');
+const MMCORE_INTERNAL_RELAY_SECRET = Deno.env.get('MMCORE_INTERNAL_RELAY_SECRET');
+const MMCORE_INVOICE_PREFIX = 'mmcore-';
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -80,6 +88,32 @@ async function relayToBiz(rawBody: string, contentType: string | null): Promise<
   }
 }
 
+// Same pass-through pattern as relayToBiz, targeting M&MCore's own
+// payram-webhook instead, with its own dedicated relay secret.
+async function relayToMmcore(rawBody: string, contentType: string | null): Promise<void> {
+  if (!MMCORE_PAYRAM_WEBHOOK_URL || !MMCORE_INTERNAL_RELAY_SECRET) {
+    console.error('payram-webhook: cannot relay to mmcore -- MMCORE_PAYRAM_WEBHOOK_URL/MMCORE_INTERNAL_RELAY_SECRET not set');
+    return;
+  }
+
+  try {
+    const resp = await fetch(MMCORE_PAYRAM_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': contentType || 'application/json',
+        'X-Internal-Relay-Secret': MMCORE_INTERNAL_RELAY_SECRET
+      },
+      body: rawBody
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      console.error(`payram-webhook: relay to mmcore failed (${resp.status}):`, text.slice(0, 500));
+    }
+  } catch (err) {
+    console.error('payram-webhook: relay to mmcore errored', err);
+  }
+}
+
 export async function handleRequest(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
@@ -119,6 +153,10 @@ export async function handleRequest(req: Request): Promise<Response> {
   // .agency-specific lookup/status logic below runs.
   if (invoiceId.startsWith(BIZ_INVOICE_PREFIX)) {
     await relayToBiz(rawBody, req.headers.get('Content-Type'));
+    return new Response('ok');
+  }
+  if (invoiceId.startsWith(MMCORE_INVOICE_PREFIX)) {
+    await relayToMmcore(rawBody, req.headers.get('Content-Type'));
     return new Response('ok');
   }
 
