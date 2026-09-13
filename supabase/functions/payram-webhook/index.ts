@@ -29,6 +29,13 @@ const MMCORE_PAYRAM_WEBHOOK_URL = Deno.env.get('MMCORE_PAYRAM_WEBHOOK_URL');
 const MMCORE_INTERNAL_RELAY_SECRET = Deno.env.get('MMCORE_INTERNAL_RELAY_SECRET');
 const MMCORE_INVOICE_PREFIX = 'mmcore-';
 
+// agenticcore.click shares this same PayRam instance/webhook too, on its
+// own separate Supabase project. Same relay pattern as .biz/mmcore: its
+// payments are created with invoiceID prefixed "click-".
+const CLICK_PAYRAM_WEBHOOK_URL = Deno.env.get('CLICK_PAYRAM_WEBHOOK_URL');
+const CLICK_INTERNAL_RELAY_SECRET = Deno.env.get('CLICK_INTERNAL_RELAY_SECRET');
+const CLICK_INVOICE_PREFIX = 'click-';
+
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // Only these move a request forward. OPEN/PARTIALLY_FILLED/CANCELLED
@@ -114,6 +121,32 @@ async function relayToMmcore(rawBody: string, contentType: string | null): Promi
   }
 }
 
+// Same pass-through pattern as relayToBiz/relayToMmcore, targeting
+// .click's own payram-webhook instead, with its own dedicated relay secret.
+async function relayToClick(rawBody: string, contentType: string | null): Promise<void> {
+  if (!CLICK_PAYRAM_WEBHOOK_URL || !CLICK_INTERNAL_RELAY_SECRET) {
+    console.error('payram-webhook: cannot relay to .click -- CLICK_PAYRAM_WEBHOOK_URL/CLICK_INTERNAL_RELAY_SECRET not set');
+    return;
+  }
+
+  try {
+    const resp = await fetch(CLICK_PAYRAM_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': contentType || 'application/json',
+        'X-Internal-Relay-Secret': CLICK_INTERNAL_RELAY_SECRET
+      },
+      body: rawBody
+    });
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '');
+      console.error(`payram-webhook: relay to .click failed (${resp.status}):`, text.slice(0, 500));
+    }
+  } catch (err) {
+    console.error('payram-webhook: relay to .click errored', err);
+  }
+}
+
 export async function handleRequest(req: Request): Promise<Response> {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
@@ -157,6 +190,10 @@ export async function handleRequest(req: Request): Promise<Response> {
   }
   if (invoiceId.startsWith(MMCORE_INVOICE_PREFIX)) {
     await relayToMmcore(rawBody, req.headers.get('Content-Type'));
+    return new Response('ok');
+  }
+  if (invoiceId.startsWith(CLICK_INVOICE_PREFIX)) {
+    await relayToClick(rawBody, req.headers.get('Content-Type'));
     return new Response('ok');
   }
 
