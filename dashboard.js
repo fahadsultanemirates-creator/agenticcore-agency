@@ -260,10 +260,9 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// -------- Checkout: PayRam + manual USDT (BEP20) --------
-// 30% due upfront, same split shown to visitors on services.html/terms.html
-// and enforced server-side by payram-create-payment -- kept here too so the
-// USDT option can display an amount even when PayRam itself is unreachable.
+// -------- Checkout: manual USDT (BEP20) --------
+// 30% due upfront, same split shown to visitors on services.html/terms.html.
+// PayRam is disabled for now -- USDT is the only payment option.
 const UPFRONT_FRACTION = 0.3;
 const USDT_BEP20_ADDRESS = '0x62Ad7D55fbc8A8591109D72b67Ec63aa1EE196bC';
 
@@ -271,57 +270,16 @@ function upfrontAmountDue(agreedPrice) {
   return Math.round(agreedPrice * UPFRONT_FRACTION * 100) / 100;
 }
 
-// Calls payram-create-payment with the caller's own session token (the
-// function resolves identity server-side and re-verifies the request
-// belongs to them -- this call can't be spoofed into paying for someone
-// else's request). Returns { url, amountDue } on success or { error }
-// on failure; never throws, so a PayRam hiccup can't break the request
-// submission it's called after.
-async function initiatePayramPayment(requestId) {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) return { error: 'Not authenticated' };
-
-  try {
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/payram-create-payment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({ requestId })
-    });
-    const data = await resp.json().catch(() => null);
-    if (!resp.ok || !data?.url) {
-      return { error: data?.error || 'Could not create a payment link.' };
-    }
-    return { url: data.url, amountDue: data.amountDue };
-  } catch (err) {
-    console.error('initiatePayramPayment failed:', err);
-    return { error: 'Could not reach the payment provider.' };
-  }
-}
-
-// Renders both checkout options into an already-visible success banner:
-// the PayRam link (or a graceful fallback note if that call failed) and
-// manual USDT (BEP20) -- always available since it doesn't depend on
-// PayRam. USDT payments aren't automatically confirmed like PayRam's are
-// (no webhook watches this address), so this asks the client to notify
-// support with their request id + transaction hash for manual review.
-function renderPaymentCTA(container, { requestId, amountDue, payram }) {
+// Renders the USDT (BEP20) checkout option into an already-visible success
+// banner. USDT payments aren't automatically confirmed (no webhook watches
+// this address), so this asks the client to notify support with their
+// request id + transaction hash for manual review.
+function renderPaymentCTA(container, { requestId, amountDue }) {
   const wrap = document.createElement('div');
   wrap.style.marginTop = 'var(--space-sm, 0.75rem)';
   wrap.style.display = 'flex';
   wrap.style.flexWrap = 'wrap';
   wrap.style.gap = 'var(--space-md, 1rem)';
-
-  const payramCol = document.createElement('div');
-  if (payram.url) {
-    payramCol.innerHTML = `<a href="${payram.url}" target="_blank" rel="noopener" class="btn btn-primary">Pay ${formatMoney(payram.amountDue)} to start your project →</a>`;
-  } else {
-    const reason = (payram.error || 'something went wrong generating it automatically').replace(/\.+$/, '');
-    payramCol.textContent = `Card/other crypto payment link: we'll follow up shortly — ${reason}.`;
-  }
-  wrap.appendChild(payramCol);
 
   const usdtCol = document.createElement('div');
   usdtCol.innerHTML = `
@@ -522,8 +480,6 @@ function initCatalogWizard(cfg) {
       return;
     }
 
-    const paymentResult = await initiatePayramPayment(insertedRequest.id);
-
     btn.disabled = false;
     btn.textContent = originalLabel;
 
@@ -537,7 +493,7 @@ function initCatalogWizard(cfg) {
 
     successEl.textContent = cfg.successMessage;
     successEl.style.display = 'block';
-    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(agreedPrice), payram: paymentResult });
+    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(agreedPrice) });
     if (cfg.onSuccess) cfg.onSuccess();
   });
 
@@ -802,8 +758,6 @@ function initPackagesTab(profile) {
       return;
     }
 
-    const paymentResult = await initiatePayramPayment(insertedRequest.id);
-
     btn.disabled = false;
     btn.textContent = originalLabel;
 
@@ -815,7 +769,7 @@ function initPackagesTab(profile) {
 
     successEl.textContent = 'Package order submitted — you can now add extra services at 50% off below, and track your order under My Projects.';
     successEl.style.display = 'block';
-    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(AGENTICCORE_PACKAGE.price), payram: paymentResult });
+    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(AGENTICCORE_PACKAGE.price) });
     unlockAddonSection(profile);
     renderProjectsPanel(profile.id);
   });
