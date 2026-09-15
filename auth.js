@@ -25,6 +25,29 @@ function setLoading(btn, loading, defaultText) {
   btn.textContent = loading ? 'Please wait…' : defaultText;
 }
 
+// -------- GOOGLE SIGN-IN / SIGN-UP (login.html, signup.html) --------
+// Same button/flow for both login and signup -- Supabase creates the
+// account on first Google sign-in, so there's nothing separate to wire up.
+const googleAuthBtn = document.getElementById('googleAuthBtn');
+if (googleAuthBtn) {
+  googleAuthBtn.addEventListener('click', async () => {
+    const errorEl = document.getElementById('authError');
+    hideAuthError(errorEl);
+    googleAuthBtn.disabled = true;
+
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}${window.location.pathname.replace(/[^/]*$/, '')}dashboard.html` }
+    });
+
+    if (error) {
+      googleAuthBtn.disabled = false;
+      showAuthError(errorEl, error.message);
+    }
+    // On success, Supabase redirects to Google -- nothing else to do here.
+  });
+}
+
 // -------- SIGN UP --------
 const signupForm = document.getElementById('signupForm');
 const referralCodeInput = document.getElementById('referralCode');

@@ -661,3 +661,54 @@
     height: 400px;
   }
 }
+
+/* ============================================
+   Forge FAB: reach Chat with Forge from any dashboard tab
+   ============================================ */
+
+.forge-fab {
+  position: fixed;
+  right: var(--space-md);
+  bottom: var(--space-md);
+  z-index: 199;
+  height: 56px;
+  padding: 0 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(160deg, var(--accent-cyan), var(--accent-blue));
+  color: var(--bg-primary);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease;
+  white-space: nowrap;
+}
+
+.forge-fab:hover {
+  transform: translateY(-2px);
+}
+
+.forge-fab svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .forge-fab {
+    right: var(--space-sm);
+    bottom: var(--space-sm);
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    justify-content: center;
+  }
+  .forge-fab span {
+    display: none;
+  }
+}

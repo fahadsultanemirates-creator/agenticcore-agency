@@ -260,10 +260,9 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// -------- Checkout: PayRam + manual USDT (BEP20) --------
-// 30% due upfront, same split shown to visitors on services.html/terms.html
-// and enforced server-side by payram-create-payment -- kept here too so the
-// USDT option can display an amount even when PayRam itself is unreachable.
+// -------- Checkout: manual USDT (BEP20) --------
+// 30% due upfront, same split shown to visitors on services.html/terms.html.
+// PayRam is disabled for now -- USDT is the only payment option.
 const UPFRONT_FRACTION = 0.3;
 const USDT_BEP20_ADDRESS = '0x62Ad7D55fbc8A8591109D72b67Ec63aa1EE196bC';
 
@@ -271,57 +270,16 @@ function upfrontAmountDue(agreedPrice) {
   return Math.round(agreedPrice * UPFRONT_FRACTION * 100) / 100;
 }
 
-// Calls payram-create-payment with the caller's own session token (the
-// function resolves identity server-side and re-verifies the request
-// belongs to them -- this call can't be spoofed into paying for someone
-// else's request). Returns { url, amountDue } on success or { error }
-// on failure; never throws, so a PayRam hiccup can't break the request
-// submission it's called after.
-async function initiatePayramPayment(requestId) {
-  const { data: { session } } = await supabaseClient.auth.getSession();
-  if (!session) return { error: 'Not authenticated' };
-
-  try {
-    const resp = await fetch(`${SUPABASE_URL}/functions/v1/payram-create-payment`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${session.access_token}`
-      },
-      body: JSON.stringify({ requestId })
-    });
-    const data = await resp.json().catch(() => null);
-    if (!resp.ok || !data?.url) {
-      return { error: data?.error || 'Could not create a payment link.' };
-    }
-    return { url: data.url, amountDue: data.amountDue };
-  } catch (err) {
-    console.error('initiatePayramPayment failed:', err);
-    return { error: 'Could not reach the payment provider.' };
-  }
-}
-
-// Renders both checkout options into an already-visible success banner:
-// the PayRam link (or a graceful fallback note if that call failed) and
-// manual USDT (BEP20) -- always available since it doesn't depend on
-// PayRam. USDT payments aren't automatically confirmed like PayRam's are
-// (no webhook watches this address), so this asks the client to notify
-// support with their request id + transaction hash for manual review.
-function renderPaymentCTA(container, { requestId, amountDue, payram }) {
+// Renders the USDT (BEP20) checkout option into an already-visible success
+// banner. USDT payments aren't automatically confirmed (no webhook watches
+// this address), so this asks the client to notify support with their
+// request id + transaction hash for manual review.
+function renderPaymentCTA(container, { requestId, amountDue }) {
   const wrap = document.createElement('div');
   wrap.style.marginTop = 'var(--space-sm, 0.75rem)';
   wrap.style.display = 'flex';
   wrap.style.flexWrap = 'wrap';
   wrap.style.gap = 'var(--space-md, 1rem)';
-
-  const payramCol = document.createElement('div');
-  if (payram.url) {
-    payramCol.innerHTML = `<a href="${payram.url}" target="_blank" rel="noopener" class="btn btn-primary">Pay ${formatMoney(payram.amountDue)} to start your project →</a>`;
-  } else {
-    const reason = (payram.error || 'something went wrong generating it automatically').replace(/\.+$/, '');
-    payramCol.textContent = `Card/other crypto payment link: we'll follow up shortly — ${reason}.`;
-  }
-  wrap.appendChild(payramCol);
 
   const usdtCol = document.createElement('div');
   usdtCol.innerHTML = `
@@ -376,7 +334,8 @@ function initCatalogWizard(cfg) {
     currentStep = n;
     stepEls.forEach((stepEl) => stepEl.classList.toggle('active', Number(stepEl.dataset.step) === n));
     indicatorEls.forEach((indEl) => indEl.classList.toggle('active', Number(indEl.dataset.step) === n));
-    backBtn.style.display = n > 1 ? 'inline-block' : 'none';
+    backBtn.style.display = (n > 1 || (n === 1 && cfg.onExitStep1)) ? 'inline-block' : 'none';
+    backBtn.textContent = n === 1 ? '← Back to chat' : '← Back';
     nextBtn.style.display = n === 3 ? 'inline-block' : 'none';
     if (n === 4) renderSummary();
   }
@@ -437,7 +396,11 @@ function initCatalogWizard(cfg) {
   }
 
   backBtn.addEventListener('click', () => {
-    if (currentStep > 1) goToStep(currentStep - 1);
+    if (currentStep > 1) {
+      goToStep(currentStep - 1);
+    } else if (cfg.onExitStep1) {
+      cfg.onExitStep1();
+    }
   });
 
   nextBtn.addEventListener('click', () => {
@@ -522,8 +485,6 @@ function initCatalogWizard(cfg) {
       return;
     }
 
-    const paymentResult = await initiatePayramPayment(insertedRequest.id);
-
     btn.disabled = false;
     btn.textContent = originalLabel;
 
@@ -537,7 +498,7 @@ function initCatalogWizard(cfg) {
 
     successEl.textContent = cfg.successMessage;
     successEl.style.display = 'block';
-    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(agreedPrice), payram: paymentResult });
+    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(agreedPrice) });
     if (cfg.onSuccess) cfg.onSuccess();
   });
 
@@ -645,25 +606,26 @@ function initForgeChat() {
   loadHistory();
 }
 
-function initNewRequestModeToggle() {
+// Exposed on window so both the mode-toggle buttons and the wizard's own
+// step-1 "back" button (which exits the wizard rather than stepping back
+// through it) can switch modes the same way.
+function setNewRequestMode(mode) {
   const forgeBtn = document.getElementById('forgeModeBtn');
   const wizardBtn = document.getElementById('wizardModeBtn');
   const forgeChat = document.getElementById('forgeChat');
   const wizard = document.getElementById('requestWizard');
 
-  forgeBtn.addEventListener('click', () => {
-    forgeBtn.classList.add('active');
-    wizardBtn.classList.remove('active');
-    forgeChat.style.display = 'flex';
-    wizard.style.display = 'none';
-  });
+  const toForge = mode === 'forge';
+  forgeBtn.classList.toggle('active', toForge);
+  wizardBtn.classList.toggle('active', !toForge);
+  forgeChat.style.display = toForge ? 'flex' : 'none';
+  wizard.style.display = toForge ? 'none' : 'block';
+}
+window.setNewRequestMode = setNewRequestMode;
 
-  wizardBtn.addEventListener('click', () => {
-    wizardBtn.classList.add('active');
-    forgeBtn.classList.remove('active');
-    wizard.style.display = 'block';
-    forgeChat.style.display = 'none';
-  });
+function initNewRequestModeToggle() {
+  document.getElementById('forgeModeBtn').addEventListener('click', () => setNewRequestMode('forge'));
+  document.getElementById('wizardModeBtn').addEventListener('click', () => setNewRequestMode('wizard'));
 }
 
 function initNewRequestWizard(profile) {
@@ -688,7 +650,8 @@ function initNewRequestWizard(profile) {
     priceMultiplier: 1,
     discountNote: null,
     successMessage: 'Request submitted — we\'ll follow up shortly. You can track it under My Projects.',
-    onSuccess: () => renderProjectsPanel(profile.id)
+    onSuccess: () => renderProjectsPanel(profile.id),
+    onExitStep1: () => setNewRequestMode('forge')
   });
 }
 
@@ -802,8 +765,6 @@ function initPackagesTab(profile) {
       return;
     }
 
-    const paymentResult = await initiatePayramPayment(insertedRequest.id);
-
     btn.disabled = false;
     btn.textContent = originalLabel;
 
@@ -815,7 +776,7 @@ function initPackagesTab(profile) {
 
     successEl.textContent = 'Package order submitted — you can now add extra services at 50% off below, and track your order under My Projects.';
     successEl.style.display = 'block';
-    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(AGENTICCORE_PACKAGE.price), payram: paymentResult });
+    renderPaymentCTA(successEl, { requestId: insertedRequest.id, amountDue: upfrontAmountDue(AGENTICCORE_PACKAGE.price) });
     unlockAddonSection(profile);
     renderProjectsPanel(profile.id);
   });
@@ -866,6 +827,18 @@ async function initPackagesPanel(profile) {
   }
 }
 
+// -------- Forge FAB: jump to New Request > Chat with Forge from any tab --------
+function initForgeFab() {
+  const fab = document.getElementById('forgeFab');
+  if (!fab) return;
+  fab.addEventListener('click', () => {
+    switchTab('new-request');
+    setNewRequestMode('forge');
+    document.getElementById('forgeChat').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('forgeChatInput').focus();
+  });
+}
+
 // -------- Init --------
 (async () => {
   const session = await requireAuth();
@@ -888,6 +861,7 @@ async function initPackagesPanel(profile) {
   initTabs();
   initNewRequestModeToggle();
   initForgeChat();
+  initForgeFab();
   initNewRequestWizard(profile);
   initPackagesPanel(profile);
   renderProjectsPanel(userId);
