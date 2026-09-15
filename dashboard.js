@@ -334,7 +334,8 @@ function initCatalogWizard(cfg) {
     currentStep = n;
     stepEls.forEach((stepEl) => stepEl.classList.toggle('active', Number(stepEl.dataset.step) === n));
     indicatorEls.forEach((indEl) => indEl.classList.toggle('active', Number(indEl.dataset.step) === n));
-    backBtn.style.display = n > 1 ? 'inline-block' : 'none';
+    backBtn.style.display = (n > 1 || (n === 1 && cfg.onExitStep1)) ? 'inline-block' : 'none';
+    backBtn.textContent = n === 1 ? '← Back to chat' : '← Back';
     nextBtn.style.display = n === 3 ? 'inline-block' : 'none';
     if (n === 4) renderSummary();
   }
@@ -395,7 +396,11 @@ function initCatalogWizard(cfg) {
   }
 
   backBtn.addEventListener('click', () => {
-    if (currentStep > 1) goToStep(currentStep - 1);
+    if (currentStep > 1) {
+      goToStep(currentStep - 1);
+    } else if (cfg.onExitStep1) {
+      cfg.onExitStep1();
+    }
   });
 
   nextBtn.addEventListener('click', () => {
@@ -601,25 +606,26 @@ function initForgeChat() {
   loadHistory();
 }
 
-function initNewRequestModeToggle() {
+// Exposed on window so both the mode-toggle buttons and the wizard's own
+// step-1 "back" button (which exits the wizard rather than stepping back
+// through it) can switch modes the same way.
+function setNewRequestMode(mode) {
   const forgeBtn = document.getElementById('forgeModeBtn');
   const wizardBtn = document.getElementById('wizardModeBtn');
   const forgeChat = document.getElementById('forgeChat');
   const wizard = document.getElementById('requestWizard');
 
-  forgeBtn.addEventListener('click', () => {
-    forgeBtn.classList.add('active');
-    wizardBtn.classList.remove('active');
-    forgeChat.style.display = 'flex';
-    wizard.style.display = 'none';
-  });
+  const toForge = mode === 'forge';
+  forgeBtn.classList.toggle('active', toForge);
+  wizardBtn.classList.toggle('active', !toForge);
+  forgeChat.style.display = toForge ? 'flex' : 'none';
+  wizard.style.display = toForge ? 'none' : 'block';
+}
+window.setNewRequestMode = setNewRequestMode;
 
-  wizardBtn.addEventListener('click', () => {
-    wizardBtn.classList.add('active');
-    forgeBtn.classList.remove('active');
-    wizard.style.display = 'block';
-    forgeChat.style.display = 'none';
-  });
+function initNewRequestModeToggle() {
+  document.getElementById('forgeModeBtn').addEventListener('click', () => setNewRequestMode('forge'));
+  document.getElementById('wizardModeBtn').addEventListener('click', () => setNewRequestMode('wizard'));
 }
 
 function initNewRequestWizard(profile) {
@@ -644,7 +650,8 @@ function initNewRequestWizard(profile) {
     priceMultiplier: 1,
     discountNote: null,
     successMessage: 'Request submitted — we\'ll follow up shortly. You can track it under My Projects.',
-    onSuccess: () => renderProjectsPanel(profile.id)
+    onSuccess: () => renderProjectsPanel(profile.id),
+    onExitStep1: () => setNewRequestMode('forge')
   });
 }
 
@@ -820,6 +827,18 @@ async function initPackagesPanel(profile) {
   }
 }
 
+// -------- Forge FAB: jump to New Request > Chat with Forge from any tab --------
+function initForgeFab() {
+  const fab = document.getElementById('forgeFab');
+  if (!fab) return;
+  fab.addEventListener('click', () => {
+    switchTab('new-request');
+    setNewRequestMode('forge');
+    document.getElementById('forgeChat').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById('forgeChatInput').focus();
+  });
+}
+
 // -------- Init --------
 (async () => {
   const session = await requireAuth();
@@ -842,6 +861,7 @@ async function initPackagesPanel(profile) {
   initTabs();
   initNewRequestModeToggle();
   initForgeChat();
+  initForgeFab();
   initNewRequestWizard(profile);
   initPackagesPanel(profile);
   renderProjectsPanel(userId);
