@@ -827,15 +827,46 @@ async function initPackagesPanel(profile) {
   }
 }
 
-// -------- Forge FAB: jump to New Request > Chat with Forge from any tab --------
+// -------- Forge FAB: jump to New Request > Chat with Forge from any tab,
+// and back again -- toggles like the marketing chat widget's bubble/X. --------
 function initForgeFab() {
   const fab = document.getElementById('forgeFab');
   if (!fab) return;
+  const chatIcon = document.getElementById('forgeFabIconChat');
+  const closeIcon = document.getElementById('forgeFabIconClose');
+  const label = document.getElementById('forgeFabLabel');
+
+  let isOpen = false;
+  let previousTab = 'projects';
+
+  function setOpen(open) {
+    isOpen = open;
+    chatIcon.hidden = open;
+    closeIcon.hidden = !open;
+    label.textContent = open ? 'Close' : 'Chat with Forge';
+    fab.setAttribute('aria-label', open ? 'Close Forge chat' : 'Chat with Forge');
+  }
+
   fab.addEventListener('click', () => {
+    if (isOpen) {
+      switchTab(previousTab);
+      setOpen(false);
+      return;
+    }
+    previousTab = document.querySelector('.dash-tab.active')?.dataset.tab || 'projects';
     switchTab('new-request');
     setNewRequestMode('forge');
     document.getElementById('forgeChat').scrollIntoView({ behavior: 'smooth', block: 'center' });
     document.getElementById('forgeChatInput').focus();
+    setOpen(true);
+  });
+
+  // Manually switching tabs away from New Request counts as closing it too,
+  // so the FAB doesn't show "Close" and jump somewhere stale on next click.
+  document.querySelectorAll('.dash-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      if (isOpen && tab.dataset.tab !== 'new-request') setOpen(false);
+    });
   });
 }
 
