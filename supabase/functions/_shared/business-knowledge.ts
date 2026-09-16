@@ -157,6 +157,23 @@ DELIVERY & BILLING POLICY
   handover. Once the remaining 70% is paid, the client gets complete
   handover: files, access, and ownership, in full.
 
+AI TRADING FRAMEWORKS
+A dedicated page (ai-trading.html) covers this in depth. AgenticCore
+builds and configures AI-run Forex and crypto trading frameworks --
+this is a custom AI agent build, not a separate product and not
+financial advice or a managed investment. What's included: multi-pair
+Forex automation with built-in stop-loss and risk management, backtested
+before going live; multi-exchange crypto automation (Bitcoin, Ethereum,
+altcoins) with dollar-cost averaging, smart entry logic, and
+volatility-adjusted risk controls; and 24/7 operation either way. The
+client brings a strategy (or builds one with our agents), we configure,
+backtest, and deploy it, and they monitor it from their dashboard.
+Priced through the existing Custom AI Agents catalog (multi-agent
+framework builds, voice AI agent for spoken alerts, agent hosting &
+maintenance, framework handover) -- no separate trading markup. Trading
+carries real risk and we never guarantee returns -- route anyone asking
+for investment advice or a return guarantee to a human.
+
 BUSINESS POOL
 Once a client's lifetime spend crosses $5,000, their account
 automatically upgrades to Business Pool — no application, no manual

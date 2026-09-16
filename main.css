@@ -791,3 +791,55 @@ section {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ============================================
+   Trading teaser (landing page image + text)
+   ============================================ */
+
+.trading-teaser .container {
+  display: grid;
+  grid-template-columns: 0.9fr 1.1fr;
+  gap: var(--space-xl);
+  align-items: center;
+}
+
+.trading-teaser-media {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
+}
+
+.trading-teaser-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  max-height: 420px;
+}
+
+.trading-teaser-text .section-eyebrow {
+  text-align: left;
+}
+
+.trading-teaser-text h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.3rem);
+  margin-bottom: var(--space-sm);
+}
+
+.trading-teaser-text > p {
+  color: var(--text-secondary);
+  margin-bottom: var(--space-md);
+}
+
+@media (max-width: 860px) {
+  .trading-teaser .container {
+    grid-template-columns: 1fr;
+  }
+  .trading-teaser-media {
+    order: -1;
+  }
+  .trading-teaser-media img {
+    max-height: 280px;
+  }
+}
