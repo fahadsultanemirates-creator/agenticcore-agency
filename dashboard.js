@@ -264,16 +264,18 @@ function escapeHtml(str) {
 // 30% due upfront, same split shown to visitors on services.html/terms.html.
 // PayRam is disabled for now -- USDT is the only payment option.
 const UPFRONT_FRACTION = 0.3;
-const USDT_BEP20_ADDRESS = '0x62Ad7D55fbc8A8591109D72b67Ec63aa1EE196bC';
+// No confirmed receiving address yet -- the previous value here was a
+// throwaway test address, not a wallet the business actually controls.
+// Showing it to clients risked real USDT being sent somewhere unrecoverable.
 
 function upfrontAmountDue(agreedPrice) {
   return Math.round(agreedPrice * UPFRONT_FRACTION * 100) / 100;
 }
 
-// Renders the USDT (BEP20) checkout option into an already-visible success
-// banner. USDT payments aren't automatically confirmed (no webhook watches
-// this address), so this asks the client to notify support with their
-// request id + transaction hash for manual review.
+// Renders the payment CTA into an already-visible success banner. Until a
+// confirmed USDT (BEP20) receiving address is set, this just points the
+// client to Telegram for manual payment instructions instead of displaying
+// an address.
 function renderPaymentCTA(container, { requestId, amountDue }) {
   const wrap = document.createElement('div');
   wrap.style.marginTop = 'var(--space-sm, 0.75rem)';
@@ -283,25 +285,9 @@ function renderPaymentCTA(container, { requestId, amountDue }) {
 
   const usdtCol = document.createElement('div');
   usdtCol.innerHTML = `
-    <p class="dash-card-note" style="margin:0 0 0.4rem;">Or pay ${formatMoney(amountDue)} in USDT (BEP20 / BNB Smart Chain):</p>
-    <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
-      <img src="usdt-bep20-qr.png" alt="USDT BEP20 address QR code" style="width:80px;height:80px;border-radius:6px;">
-      <div>
-        <code style="font-size:0.8rem;word-break:break-all;">${USDT_BEP20_ADDRESS}</code><br>
-        <button type="button" class="btn btn-secondary btn-sm copy-usdt-address-btn" style="margin-top:0.3rem;">Copy address</button>
-      </div>
-    </div>
-    <p class="dash-card-note" style="margin:0.4rem 0 0;">After sending, message us on <a href="https://t.me/agenticcore_support" target="_blank" rel="noopener">Telegram</a> with your request ID (<code>${requestId}</code>) and transaction hash so we can confirm it — USDT payments are verified manually.</p>
+    <p class="dash-card-note" style="margin:0 0 0.4rem;">To pay ${formatMoney(amountDue)} upfront, message us on <a href="https://t.me/agenticcore_support" target="_blank" rel="noopener">Telegram</a> with your request ID (<code>${requestId}</code>) and we'll send you payment instructions.</p>
   `;
   wrap.appendChild(usdtCol);
-
-  const copyBtn = usdtCol.querySelector('.copy-usdt-address-btn');
-  copyBtn.addEventListener('click', () => {
-    navigator.clipboard.writeText(USDT_BEP20_ADDRESS).then(() => {
-      copyBtn.textContent = 'Copied!';
-      setTimeout(() => { copyBtn.textContent = 'Copy address'; }, 1500);
-    });
-  });
 
   container.appendChild(wrap);
 }
