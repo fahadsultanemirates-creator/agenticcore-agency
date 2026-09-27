@@ -52,6 +52,45 @@ function renderHeader(profile) {
   document.getElementById('pointsBalance').textContent = formatMoney(profile.points_balance);
 }
 
+// -------- Referrals tab: level counts, points earned, and names --------
+async function renderReferralsPanel(userId) {
+  const errorEl = document.getElementById('referralTreeError');
+
+  const [{ data: tree, error: treeError }, { data: earned, error: pointsError }] = await Promise.all([
+    supabaseClient.rpc('get_my_referral_tree'),
+    supabaseClient.from('points_transactions').select('amount, referral_tier').eq('user_id', userId).eq('type', 'earned_referral')
+  ]);
+
+  if (treeError || pointsError) {
+    console.error('Failed to load referral tree', treeError || pointsError);
+    if (errorEl) {
+      errorEl.textContent = 'Could not load your referral network right now — try refreshing.';
+      errorEl.style.display = 'block';
+    }
+    return;
+  }
+
+  const pointsByLevel = { 1: 0, 2: 0, 3: 0 };
+  (earned || []).forEach((row) => {
+    if (row.referral_tier) pointsByLevel[row.referral_tier] += Number(row.amount);
+  });
+
+  [1, 2, 3].forEach((level) => {
+    document.getElementById(`refL${level}Points`).textContent = `${formatMoney(pointsByLevel[level])} earned`;
+    const people = (tree || []).filter((row) => row.level === level);
+    document.getElementById(`refL${level}Count`).textContent = String(people.length);
+    const listEl = document.getElementById(`refL${level}List`);
+    const emptyEl = document.getElementById(`refL${level}Empty`);
+    if (people.length) {
+      emptyEl.style.display = 'none';
+      listEl.innerHTML = people.map((p) => `<li>${escapeHtml(p.company_name || p.full_name || 'Unnamed account')}</li>`).join('');
+    } else {
+      emptyEl.style.display = 'block';
+      listEl.innerHTML = '';
+    }
+  });
+}
+
 // -------- Business Pool section --------
 const BUSINESS_POOL_THRESHOLD = 5000;
 
@@ -260,22 +299,22 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-// -------- Checkout: manual USDT (BEP20) --------
+// -------- Checkout --------
 // 30% due upfront, same split shown to visitors on services.html/terms.html.
-// PayRam is disabled for now -- USDT is the only payment option.
+// No confirmed payment method is on file yet, so this hands off to a person
+// on Telegram rather than displaying account details that haven't been
+// verified as ones the business actually controls (see the git history on
+// this file for why that matters).
 const UPFRONT_FRACTION = 0.3;
-// No confirmed receiving address yet -- the previous value here was a
-// throwaway test address, not a wallet the business actually controls.
-// Showing it to clients risked real USDT being sent somewhere unrecoverable.
 
 function upfrontAmountDue(agreedPrice) {
   return Math.round(agreedPrice * UPFRONT_FRACTION * 100) / 100;
 }
 
 // Renders the payment CTA into an already-visible success banner. Until a
-// confirmed USDT (BEP20) receiving address is set, this just points the
+// confirmed payment method is set in admin settings, this just points the
 // client to Telegram for manual payment instructions instead of displaying
-// an address.
+// account details.
 function renderPaymentCTA(container, { requestId, amountDue }) {
   const wrap = document.createElement('div');
   wrap.style.marginTop = 'var(--space-sm, 0.75rem)';
@@ -883,6 +922,7 @@ function initForgeFab() {
   initPackagesPanel(profile);
   renderProjectsPanel(userId);
   renderBillingPanel(userId);
+  renderReferralsPanel(userId);
 
   document.getElementById('logoutBtn').addEventListener('click', logOut);
 })();
