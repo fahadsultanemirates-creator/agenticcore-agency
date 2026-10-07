@@ -12,52 +12,56 @@
 }
 
 .chat-widget-toggle {
-  width: 56px;
   height: 56px;
-  border-radius: 50%;
+  padding: 0 1.1rem;
+  border-radius: 999px;
   border: none;
   background: linear-gradient(160deg, var(--accent-cyan), var(--accent-blue));
   color: var(--bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(255, 30, 158, 0.35);
   transition: transform 0.2s ease;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .chat-widget-toggle:hover {
-  transform: scale(1.05);
+  transform: translateY(-2px);
 }
 
 .chat-widget-toggle svg {
-  width: 24px;
-  height: 24px;
-  position: absolute;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  position: relative;
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .chat-widget-toggle .chat-widget-icon-close {
-  opacity: 0;
-  transform: scale(0.7);
+  display: none;
 }
 
 .chat-widget-toggle.is-open .chat-widget-icon-open {
-  opacity: 0;
-  transform: scale(0.7);
+  display: none;
 }
 
 .chat-widget-toggle.is-open .chat-widget-icon-close {
-  opacity: 1;
-  transform: scale(1);
+  display: block;
 }
+
 
 .chat-widget-panel {
   position: absolute;
   right: 0;
   bottom: calc(56px + var(--space-sm));
-  width: min(360px, calc(100vw - 2 * var(--space-md)));
-  height: min(520px, calc(100vh - 140px));
+  width: min(400px, calc(100vw - 2 * var(--space-md)));
+  height: min(620px, calc(100vh - 140px));
   background: var(--bg-panel);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -87,6 +91,45 @@
   font-weight: 600;
   color: var(--text-primary);
   font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chat-widget-header svg {
+  width: 18px;
+  height: 18px;
+  color: var(--accent-cyan);
+  flex-shrink: 0;
+}
+
+.chat-widget-header span {
+  flex: 1;
+}
+
+.chat-widget-panel-close {
+  display: none;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.chat-widget-panel-close:hover {
+  background: var(--bg-panel-hover);
+  color: var(--text-primary);
+}
+
+.chat-widget-panel-close svg {
+  width: 18px;
+  height: 18px;
+  color: inherit;
 }
 
 .chat-widget-messages {
@@ -206,26 +249,48 @@
   background: var(--accent-blue);
 }
 
+@media (max-width: 640px) {
+  .chat-widget-panel {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    border-radius: 0;
+    z-index: 1;
+  }
+  .chat-widget-panel-close {
+    display: flex;
+  }
+  .chat-widget-toggle.is-open {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
 @media (max-width: 480px) {
   .chat-widget {
     right: var(--space-sm);
     bottom: var(--space-sm);
   }
-  .chat-widget-panel {
-    width: calc(100vw - 2 * var(--space-sm));
-    height: min(480px, calc(100vh - 120px));
+  .chat-widget-toggle-label {
+    display: none;
+  }
+  .chat-widget-toggle {
+    width: 56px;
+    padding: 0;
+    justify-content: center;
   }
 }
 
 /* ============================================
-   Support email button -- sits beside the chat toggle, same fixed
+   Support email button -- stacks above the Forge toggle, same fixed
    bottom-right cluster.
    ============================================ */
 
 .support-email-fab {
   position: fixed;
-  right: calc(var(--space-md) + 56px + 0.6rem);
-  bottom: var(--space-md);
+  right: var(--space-md);
+  bottom: calc(var(--space-md) + 56px + 0.6rem);
   z-index: 199;
   height: 56px;
   padding: 0 1.1rem;
@@ -258,8 +323,8 @@
 
 @media (max-width: 480px) {
   .support-email-fab {
-    right: calc(var(--space-sm) + 56px + 0.5rem);
-    bottom: var(--space-sm);
+    right: var(--space-sm);
+    bottom: calc(var(--space-sm) + 56px + 0.5rem);
     width: 56px;
     height: 56px;
     padding: 0;

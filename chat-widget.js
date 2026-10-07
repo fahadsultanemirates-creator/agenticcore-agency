@@ -41,17 +41,22 @@ function buildWidgetMarkup() {
   const wrap = document.createElement('div');
   wrap.className = 'chat-widget';
   wrap.innerHTML = `
-    <button type="button" class="chat-widget-toggle" id="chatWidgetToggle" aria-label="Chat with AgenticCore" aria-expanded="false">
-      <svg class="chat-widget-icon-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    <button type="button" class="chat-widget-toggle" id="chatWidgetToggle" aria-label="Chat with Forge" aria-expanded="false">
+      <svg class="chat-widget-icon-open" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"/></svg>
       <svg class="chat-widget-icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      <span class="chat-widget-toggle-label" id="chatWidgetToggleLabel">Forge</span>
     </button>
     <div class="chat-widget-panel" id="chatWidgetPanel" hidden>
       <div class="chat-widget-header">
-        <span>AgenticCore Assistant</span>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z"/></svg>
+        <span>Forge</span>
+        <button type="button" class="chat-widget-panel-close" id="chatWidgetPanelClose" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
       <div class="chat-widget-messages" id="chatWidgetMessages" aria-live="polite"></div>
       <form class="chat-widget-form" id="chatWidgetForm">
-        <input type="text" id="chatWidgetInput" class="chat-widget-input" placeholder="Ask about pricing, services, anything…" autocomplete="off" maxlength="4000">
+        <input type="text" id="chatWidgetInput" class="chat-widget-input" placeholder="Tell Forge what you need, or ask a question…" autocomplete="off" maxlength="4000">
         <button type="submit" class="chat-widget-send" id="chatWidgetSend" aria-label="Send">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
@@ -101,7 +106,9 @@ function removeTypingIndicator() {
   document.body.appendChild(widgetEl);
 
   const toggleBtn = document.getElementById('chatWidgetToggle');
+  const toggleLabel = document.getElementById('chatWidgetToggleLabel');
   const panel = document.getElementById('chatWidgetPanel');
+  const panelCloseBtn = document.getElementById('chatWidgetPanelClose');
   const messagesEl = document.getElementById('chatWidgetMessages');
   const form = document.getElementById('chatWidgetForm');
   const input = document.getElementById('chatWidgetInput');
@@ -113,6 +120,8 @@ function removeTypingIndicator() {
     panel.hidden = false;
     toggleBtn.classList.add('is-open');
     toggleBtn.setAttribute('aria-expanded', 'true');
+    toggleBtn.setAttribute('aria-label', 'Close Forge chat');
+    toggleLabel.textContent = 'Close';
 
     if (!historyLoaded) {
       historyLoaded = true;
@@ -121,10 +130,10 @@ function removeTypingIndicator() {
         if (messages && messages.length) {
           messages.forEach((m) => appendMessage(messagesEl, m.role, m.content));
         } else {
-          appendMessage(messagesEl, 'assistant', "Hi! I'm the AgenticCore assistant — ask me about pricing, services, or how to get started.");
+          appendMessage(messagesEl, 'assistant', "Hi, I'm Forge 👋 Tell me what your business needs — a website, a logo, marketing, bookkeeping, whatever — and I'll scope it out and get you a price.");
         }
       } catch (e) {
-        appendMessage(messagesEl, 'assistant', "Hi! I'm the AgenticCore assistant — ask me about pricing, services, or how to get started.");
+        appendMessage(messagesEl, 'assistant', "Hi, I'm Forge 👋 Tell me what your business needs — a website, a logo, marketing, bookkeeping, whatever — and I'll scope it out and get you a price.");
       }
     }
     input.focus();
@@ -134,12 +143,16 @@ function removeTypingIndicator() {
     panel.hidden = true;
     toggleBtn.classList.remove('is-open');
     toggleBtn.setAttribute('aria-expanded', 'false');
+    toggleBtn.setAttribute('aria-label', 'Chat with Forge');
+    toggleLabel.textContent = 'Forge';
   }
 
   toggleBtn.addEventListener('click', () => {
     if (panel.hidden) openPanel();
     else closePanel();
   });
+
+  panelCloseBtn.addEventListener('click', closePanel);
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !panel.hidden) closePanel();
