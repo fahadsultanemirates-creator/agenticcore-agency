@@ -1,8 +1,8 @@
 // AgenticCore Agency — Telegram bot webhook. Registered as the bot's
 // webhook URL via Telegram's setWebhook API. Every ordinary message
 // Telegram routes here goes through handleIncomingMessage() in
-// ../_shared/bot-core.ts (the 'telegram' channel there answers via
-// xAI's Grok) -- but this file also owns a small owner-only task-manager
+// ../_shared/bot-core.ts (the 'telegram' channel there answers via the
+// Claude API) -- but this file also owns a small owner-only task-manager
 // layer on top: /status, /approve, /reject, an inline "patch this task's
 // draft" shortcut, and (new) committing an approved/patched website
 // draft's files straight to jobs/AC-AGENCY-XXXX/ on main. All of it
@@ -10,14 +10,15 @@
 // untouched.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.132.0';
 import { handleIncomingMessage } from '../_shared/bot-core.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!;
 const TELEGRAM_WEBHOOK_SECRET = Deno.env.get('TELEGRAM_WEBHOOK_SECRET')!;
-const XAI_API_KEY = Deno.env.get('XAI_API_KEY')!;
-const XAI_MODEL = Deno.env.get('XAI_MODEL') || undefined;
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
+const ANTHROPIC_MODEL = Deno.env.get('ANTHROPIC_MODEL') || undefined;
 // Telegram's numeric user id for the account owner, as a string (compared
 // against String(message.from.id)) -- gates /status, /approve, /reject,
 // and (together with a task's own external_id) the draft-patch shortcut.
@@ -34,8 +35,7 @@ const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 // long reply can't itself cause the sendMessage call to fail.
 const MAX_TELEGRAM_MESSAGE_LENGTH = 4000;
 
-const XAI_URL = 'https://api.x.ai/v1/chat/completions';
-const DEFAULT_XAI_MODEL = 'grok-4-1';
+const DEFAULT_CLAUDE_MODEL = 'claude-opus-5-5';
 
 const TASK_BRAND = 'agency';
 const TASK_ID_PATTERN = /AC-AGENCY-\d{4}/i;
@@ -72,29 +72,19 @@ function isOwner(fromId: number | undefined): boolean {
   return Boolean(OWNER_TELEGRAM_ID) && fromId !== undefined && String(fromId) === OWNER_TELEGRAM_ID;
 }
 
-async function callXaiPlainText(prompt: string): Promise<string> {
-  const resp = await fetch(XAI_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${XAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: XAI_MODEL || DEFAULT_XAI_MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.4
-    })
+async function callClaudePlainText(prompt: string): Promise<string> {
+  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
+
+  const response = await client.messages.create({
+    model: ANTHROPIC_MODEL || DEFAULT_CLAUDE_MODEL,
+    max_tokens: 4096,
+    output_config: { effort: 'low' },
+    messages: [{ role: 'user', content: prompt }]
   });
 
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`xAI request failed (${resp.status}): ${text.slice(0, 500)}`);
-  }
-
-  const data = await resp.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error('xAI response missing message content');
-  return content;
+  const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+  if (!textBlock) throw new Error('Claude response missing a text block');
+  return textBlock.text;
 }
 
 function draftPrompt(task: { title: string; task_type: string; brief: string | null }): string {
@@ -331,7 +321,7 @@ async function handleApproveCommand(chatId: number, publicId: string): Promise<v
 
   let draft: string;
   try {
-    draft = await callXaiPlainText(draftPrompt(task));
+    draft = await callClaudePlainText(draftPrompt(task));
   } catch (err) {
     console.error('telegram-webhook: draft generation failed', err);
     await sendTelegramMessage(chatId, `${publicId} is building, but the first draft failed to generate. Try /approve ${publicId} again in a moment.`);
@@ -419,7 +409,7 @@ async function tryHandleDraftPatch(chatId: number, fromId: number | undefined, p
 
   let updatedDraft: string;
   try {
-    updatedDraft = await callXaiPlainText(patchPrompt(task.draft_text || '', requestedChange));
+    updatedDraft = await callClaudePlainText(patchPrompt(task.draft_text || '', requestedChange));
   } catch (err) {
     console.error('telegram-webhook: draft patch generation failed', err);
     await sendTelegramMessage(chatId, `Could not apply that change to ${publicId} right now.`);
@@ -533,8 +523,8 @@ export async function handleRequest(req: Request): Promise<Response> {
       channel: 'telegram',
       externalId: String(chatId),
       userMessage: text,
-      xaiApiKey: XAI_API_KEY,
-      model: XAI_MODEL,
+      anthropicApiKey: ANTHROPIC_API_KEY,
+      model: ANTHROPIC_MODEL,
       languageHint
     });
 

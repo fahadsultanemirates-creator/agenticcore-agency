@@ -1,21 +1,26 @@
-// AgenticCore Agency — shared front-desk bot logic, used by both the
-// homepage widget and Telegram Edge Functions. Channel-agnostic on
-// purpose: it takes plain text in, returns plain text out, and knows
-// nothing about HTTP requests or Telegram updates. That split is also
-// what keeps a future voice layer (STT before this, TTS after) from
-// requiring a rewrite -- it would wrap this function, not replace it.
+// AgenticCore Agency — shared front-desk bot logic, used by the homepage
+// widget, Telegram, and the dashboard's own Forge assistant. Channel-
+// agnostic on purpose: it takes plain text in, returns plain text out,
+// and knows nothing about HTTP requests or Telegram updates. That split
+// is also what keeps a future voice layer (STT before this, TTS after)
+// from requiring a rewrite -- it would wrap this function, not replace
+// it.
 //
-// The channels diverge on which model answers and how much structure
-// the reply carries: widget stays on OpenRouter with the original
-// 4-field JSON (unchanged, so widget-chat needs no changes at all),
-// while telegram and forge both use xAI's Grok and an expanded 7-field
-// JSON that can additionally file a manager_tasks row when the
-// conversation describes something the manager should personally
-// follow up on. forge is the dashboard's own project-intake assistant
-// (see supabase/functions/forge-chat/index.ts) -- same brain as
-// Telegram's manager bot, just reached from inside the dashboard by an
+// All three channels now run on the Claude API directly (previously
+// widget was on OpenRouter and telegram/forge were on xAI's Grok --
+// migrated so every AgenticCore assistant is Claude, with no other
+// provider left in the stack). widget keeps the original 4-field JSON
+// shape; telegram and forge share an expanded 7-field shape that can
+// additionally file a manager_tasks row when the conversation describes
+// something the manager should personally follow up on. forge is the
+// dashboard's own project-intake assistant (see
+// supabase/functions/forge-chat/index.ts) -- same brain as Telegram's
+// manager bot, just reached from inside the dashboard by an
 // already-signed-in client instead of from Telegram.
 
+import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.132.0';
+import { zodOutputFormat } from 'https://esm.sh/@anthropic-ai/sdk@0.132.0/helpers/zod';
+import { z } from 'https://esm.sh/zod@3.25.76';
 import { BUSINESS_KNOWLEDGE_PROMPT } from './business-knowledge.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -44,13 +49,9 @@ export interface HandleMessageParams {
   channel: Channel;
   externalId: string;
   userMessage: string;
-  // Required for channel 'widget', unused for 'telegram'.
-  openRouterApiKey?: string;
-  // Required for channel 'telegram', unused for 'widget'.
-  xaiApiKey?: string;
-  // Model override -- interpreted against whichever provider the
-  // channel uses (OpenRouter model id for 'widget', xAI model id for
-  // 'telegram').
+  // Required for every channel -- the one provider all three now share.
+  anthropicApiKey: string;
+  // Model override -- a Claude model id, e.g. "claude-sonnet-5-5".
   model?: string;
   // Optional signal from the transport layer (Telegram's per-user
   // language_code, or the browser's navigator.language) -- not a
@@ -66,11 +67,7 @@ export interface HandleMessageResult {
   rateLimited?: boolean;
 }
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const DEFAULT_MODEL = 'anthropic/claude-sonnet-5';
-
-const XAI_URL = 'https://api.x.ai/v1/chat/completions';
-const DEFAULT_XAI_MODEL = 'grok-4-1';
+const DEFAULT_CLAUDE_MODEL = 'claude-opus-5-5';
 
 const HISTORY_LIMIT = 30;
 const RATE_LIMIT_WINDOW_MINUTES = 10;
@@ -171,34 +168,18 @@ async function isRateLimited(supabaseAdmin: SupabaseAdmin, conversationId: strin
   return (count || 0) >= RATE_LIMIT_MAX_USER_MESSAGES;
 }
 
-const REPLY_JSON_SCHEMA = {
-  name: 'agenticcore_bot_reply',
-  strict: true,
-  schema: {
-    type: 'object',
-    properties: {
-      reply: {
-        type: 'string',
-        description: "The reply to send to the visitor, written entirely in the visitor's own language."
-      },
-      detected_language: {
-        type: 'string',
-        description: 'ISO 639-1 code (or best-guess language name) of the language the visitor wrote in.'
-      },
-      needs_human: {
-        type: 'boolean',
-        description:
-          'True if this conversation should be handed off to a human -- custom/large scope, price/scope negotiation, signs of frustration, or any commitment beyond pre-approved terms.'
-      },
-      uncertain: {
-        type: 'boolean',
-        description: 'True if the assistant is not confident in the reply, or the question falls outside the given business knowledge.'
-      }
-    },
-    required: ['reply', 'detected_language', 'needs_human', 'uncertain'],
-    additionalProperties: false
-  }
-};
+const ReplyOutputSchema = z.object({
+  reply: z.string().describe("The reply to send to the visitor, written entirely in the visitor's own language."),
+  detected_language: z.string().describe('ISO 639-1 code (or best-guess language name) of the language the visitor wrote in.'),
+  needs_human: z
+    .boolean()
+    .describe(
+      'True if this conversation should be handed off to a human -- custom/large scope, price/scope negotiation, signs of frustration, or any commitment beyond pre-approved terms.'
+    ),
+  uncertain: z
+    .boolean()
+    .describe('True if the assistant is not confident in the reply, or the question falls outside the given business knowledge.')
+});
 
 interface ParsedReply {
   reply: string;
@@ -209,50 +190,20 @@ interface ParsedReply {
 
 // Telegram/manager-only: adds create_task/task_title/task_type on top of
 // the base reply shape. task_title/task_type are always strings (empty
-// when create_task is false) rather than nullable, since strict
-// json_schema mode across providers handles a plain required string more
-// reliably than a nullable union.
-const MANAGER_REPLY_JSON_SCHEMA = {
-  name: 'agenticcore_manager_bot_reply',
-  strict: true,
-  schema: {
-    type: 'object',
-    properties: {
-      reply: {
-        type: 'string',
-        description: "The reply to send, written entirely in the sender's own language."
-      },
-      detected_language: {
-        type: 'string',
-        description: 'ISO 639-1 code (or best-guess language name) of the language the sender wrote in.'
-      },
-      needs_human: {
-        type: 'boolean',
-        description:
-          'True if this conversation should be handed off to a human -- custom/large scope, price/scope negotiation, signs of frustration, or any commitment beyond pre-approved terms.'
-      },
-      uncertain: {
-        type: 'boolean',
-        description: 'True if the assistant is not confident in the reply, or the question falls outside the given business knowledge.'
-      },
-      create_task: {
-        type: 'boolean',
-        description:
-          'True if this conversation describes concrete work the manager should personally track and follow up on (a project inquiry, a specific complaint, a request needing manual verification, anything already flagged as needing human handoff). False for ordinary questions you can already answer.'
-      },
-      task_title: {
-        type: 'string',
-        description: 'Short (few-word) title summarizing the task. Empty string if create_task is false.'
-      },
-      task_type: {
-        type: 'string',
-        description: 'Short category for the task, e.g. "website", "design", "marketing", "bug", "general". Empty string if create_task is false.'
-      }
-    },
-    required: ['reply', 'detected_language', 'needs_human', 'uncertain', 'create_task', 'task_title', 'task_type'],
-    additionalProperties: false
-  }
-};
+// when create_task is false) rather than nullable, since strict schema
+// mode handles a plain required string more reliably than a nullable
+// union.
+const ManagerReplyOutputSchema = ReplyOutputSchema.extend({
+  create_task: z
+    .boolean()
+    .describe(
+      'True if this conversation describes concrete work the manager should personally track and follow up on (a project inquiry, a specific complaint, a request needing manual verification, anything already flagged as needing human handoff). False for ordinary questions you can already answer.'
+    ),
+  task_title: z.string().describe('Short (few-word) title summarizing the task. Empty string if create_task is false.'),
+  task_type: z
+    .string()
+    .describe('Short category for the task, e.g. "website", "design", "marketing", "bug", "general". Empty string if create_task is false.')
+});
 
 interface ManagerParsedReply extends ParsedReply {
   create_task: boolean;
@@ -260,66 +211,34 @@ interface ManagerParsedReply extends ParsedReply {
   task_type: string;
 }
 
-async function callOpenRouter(
+// Single call path for all three channels now that they share one
+// provider. `schema` picks the output shape (plain reply vs. the
+// manager/forge shape with create_task/task_title/task_type); effort
+// stays low -- this is short conversational chat/classification work,
+// not multi-step reasoning, so the top of the effort range buys nothing
+// here (see the claude-api skill's cost-tuning guidance).
+async function callClaude<T extends z.ZodTypeAny>(
   apiKey: string,
   model: string,
-  messages: { role: string; content: string }[]
-): Promise<ParsedReply> {
-  const resp = await fetch(OPENROUTER_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-      'HTTP-Referer': 'https://agenticcore.agency',
-      'X-Title': 'AgenticCore Front-Desk Bot'
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      response_format: { type: 'json_schema', json_schema: REPLY_JSON_SCHEMA },
-      temperature: 0.4
-    })
+  systemPrompt: string,
+  history: { role: 'user' | 'assistant'; content: string }[],
+  userMessage: string,
+  schema: T
+): Promise<z.infer<T>> {
+  const client = new Anthropic({ apiKey });
+
+  const response = await client.messages.parse({
+    model,
+    max_tokens: 4096,
+    system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
+    output_config: { effort: 'low', format: zodOutputFormat(schema) },
+    messages: [...history, { role: 'user', content: userMessage }]
   });
 
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`OpenRouter request failed (${resp.status}): ${text.slice(0, 500)}`);
+  if (!response.parsed_output) {
+    throw new Error('Claude response did not parse against the expected output schema');
   }
-
-  const data = await resp.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error('OpenRouter response missing message content');
-  return JSON.parse(content) as ParsedReply;
-}
-
-async function callXai(
-  apiKey: string,
-  model: string,
-  messages: { role: string; content: string }[]
-): Promise<ManagerParsedReply> {
-  const resp = await fetch(XAI_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      response_format: { type: 'json_schema', json_schema: MANAGER_REPLY_JSON_SCHEMA },
-      temperature: 0.4
-    })
-  });
-
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`xAI request failed (${resp.status}): ${text.slice(0, 500)}`);
-  }
-
-  const data = await resp.json();
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content) throw new Error('xAI response missing message content');
-  return JSON.parse(content) as ManagerParsedReply;
+  return response.parsed_output;
 }
 
 // Count-then-insert, exactly as specified (no Postgres sequence): count
@@ -366,7 +285,7 @@ async function createManagerTask(
 }
 
 export async function handleIncomingMessage(params: HandleMessageParams): Promise<HandleMessageResult> {
-  const { supabaseAdmin, channel, externalId, userMessage, openRouterApiKey, xaiApiKey, model, languageHint } = params;
+  const { supabaseAdmin, channel, externalId, userMessage, anthropicApiKey, model, languageHint } = params;
 
   const conversation = await findOrCreateConversation(supabaseAdmin, channel, externalId);
 
@@ -384,11 +303,10 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
     systemPrompt += `\n\n${FORGE_ADDITIVE_PROMPT}`;
   }
 
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...history.map((m) => ({ role: m.role, content: m.content })),
-    { role: 'user', content: userMessage }
-  ];
+  const claudeHistory: { role: 'user' | 'assistant'; content: string }[] = history.map((m) => ({
+    role: m.role,
+    content: m.content
+  }));
 
   let reply: string;
   let detectedLanguage: string;
@@ -396,13 +314,18 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
   let uncertain: boolean;
 
   if (channel === 'telegram' || channel === 'forge') {
-    if (!xaiApiKey) throw new Error(`xaiApiKey is required for the ${channel} channel`);
-
     let parsed: ManagerParsedReply;
     try {
-      parsed = await callXai(xaiApiKey, model || DEFAULT_XAI_MODEL, messages);
+      parsed = await callClaude(
+        anthropicApiKey,
+        model || DEFAULT_CLAUDE_MODEL,
+        systemPrompt,
+        claudeHistory,
+        userMessage,
+        ManagerReplyOutputSchema
+      );
     } catch (err) {
-      console.error('xAI call failed:', err);
+      console.error('Claude call failed:', err);
       return { reply: GENERIC_ERROR_MESSAGE, needsHuman: false };
     }
 
@@ -429,13 +352,11 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
       }
     }
   } else {
-    if (!openRouterApiKey) throw new Error('openRouterApiKey is required for the widget channel');
-
     let parsed: ParsedReply;
     try {
-      parsed = await callOpenRouter(openRouterApiKey, model || DEFAULT_MODEL, messages);
+      parsed = await callClaude(anthropicApiKey, model || DEFAULT_CLAUDE_MODEL, systemPrompt, claudeHistory, userMessage, ReplyOutputSchema);
     } catch (err) {
-      console.error('OpenRouter call failed:', err);
+      console.error('Claude call failed:', err);
       return { reply: GENERIC_ERROR_MESSAGE, needsHuman: false };
     }
 

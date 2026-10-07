@@ -1,6 +1,6 @@
 // AgenticCore Agency — Forge, the dashboard's own project-intake
 // assistant. Same brain as the Telegram manager bot (handleIncomingMessage
-// on the 'forge' channel in ../_shared/bot-core.ts -- xAI's Grok, the
+// on the 'forge' channel in ../_shared/bot-core.ts -- the Claude API, the
 // same manager-task-filing judgment), just reached from inside the
 // dashboard by an already-signed-in client instead of from Telegram.
 //
@@ -18,8 +18,8 @@ import { handleIncomingMessage, getConversationHistory } from '../_shared/bot-co
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const XAI_API_KEY = Deno.env.get('XAI_API_KEY')!;
-const XAI_MODEL = Deno.env.get('XAI_MODEL') || undefined;
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
+const ANTHROPIC_MODEL = Deno.env.get('ANTHROPIC_MODEL') || undefined;
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -110,8 +110,8 @@ export async function handleRequest(req: Request): Promise<Response> {
         channel: 'forge',
         externalId: caller.id,
         userMessage: message,
-        xaiApiKey: XAI_API_KEY,
-        model: XAI_MODEL
+        anthropicApiKey: ANTHROPIC_API_KEY,
+        model: ANTHROPIC_MODEL
       });
 
       return jsonResponse({ reply: result.reply, needsHuman: result.needsHuman });
