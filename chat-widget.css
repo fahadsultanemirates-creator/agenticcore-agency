@@ -22,7 +22,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(34, 211, 238, 0.35);
+  box-shadow: 0 8px 24px rgba(255, 30, 158, 0.35);
   transition: transform 0.2s ease;
 }
 
@@ -127,7 +127,7 @@
   align-self: flex-start;
   color: var(--accent-cyan);
   font-size: 0.82rem;
-  border-bottom: 1px solid rgba(34, 211, 238, 0.3);
+  border-bottom: 1px solid rgba(255, 30, 158, 0.3);
   padding-bottom: 2px;
 }
 

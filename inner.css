@@ -90,7 +90,7 @@
 
 .deep-block a {
   color: var(--accent-cyan);
-  border-bottom: 1px solid rgba(34, 211, 238, 0.3);
+  border-bottom: 1px solid rgba(255, 30, 158, 0.3);
   transition: border-color 0.2s ease;
 }
 
@@ -169,7 +169,7 @@
 .level-badge {
   font-family: var(--font-mono);
   font-size: 0.85rem;
-  color: #06222B;
+  color: #2a0320;
   background: var(--accent-cyan);
   width: 44px;
   height: 44px;
@@ -183,7 +183,7 @@
 
 .level-row.l2 .level-badge {
   background: var(--accent-blue);
-  color: #05122B;
+  color: #2a0320;
 }
 
 .level-row.l3 .level-badge {
@@ -231,7 +231,7 @@
 .note-box {
   border-left: 3px solid var(--accent-cyan);
   padding: var(--space-sm) var(--space-md);
-  background: rgba(34, 211, 238, 0.05);
+  background: rgba(255, 30, 158, 0.05);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: 0.9rem;
   color: var(--text-secondary);

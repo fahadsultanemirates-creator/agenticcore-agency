@@ -63,7 +63,7 @@
 
 .service-note a {
   color: var(--accent-cyan);
-  border-bottom: 1px solid rgba(34, 211, 238, 0.3);
+  border-bottom: 1px solid rgba(255, 30, 158, 0.3);
 }
 
 .catalog-from {
@@ -80,7 +80,7 @@
   color: var(--accent-cyan);
   font-size: 0.88rem;
   cursor: pointer;
-  border-bottom: 1px solid rgba(34, 211, 238, 0.3);
+  border-bottom: 1px solid rgba(255, 30, 158, 0.3);
 }
 
 .catalog-item-list {

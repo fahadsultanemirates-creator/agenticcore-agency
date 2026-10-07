@@ -76,7 +76,7 @@
 
 .bp-card {
   background: linear-gradient(160deg, var(--bg-panel-hover), var(--bg-primary));
-  border: 1px solid rgba(34, 211, 238, 0.25);
+  border: 1px solid rgba(255, 30, 158, 0.25);
   border-radius: var(--radius-lg);
   padding: var(--space-md) var(--space-lg);
   display: flex;
@@ -105,7 +105,7 @@
 .bp-progress-fill {
   height: 100%;
   width: 0%;
-  background: linear-gradient(90deg, var(--accent-cyan), #3B82F6);
+  background: linear-gradient(90deg, var(--accent-cyan), var(--accent-blue));
   border-radius: 999px;
   transition: width 0.4s ease;
 }
@@ -308,7 +308,7 @@
 .status-confirmed, .status-in_progress { background: rgba(59, 130, 246, 0.15); color: #60A5FA; }
 .status-awaiting_review { background: rgba(234, 179, 8, 0.15); color: #FACC15; }
 .status-revision_requested { background: rgba(249, 115, 22, 0.15); color: #FB923C; }
-.status-delivered, .status-paid { background: rgba(34, 211, 238, 0.15); color: var(--accent-cyan); }
+.status-delivered, .status-paid { background: rgba(255, 30, 158, 0.15); color: var(--accent-cyan); }
 .status-approved { background: rgba(74, 222, 128, 0.15); color: #4ADE80; }
 .status-refunded { background: rgba(239, 68, 68, 0.15); color: #F87171; }
 
@@ -406,12 +406,12 @@
 }
 
 .wizard-option-card:hover {
-  border-color: rgba(34, 211, 238, 0.4);
+  border-color: rgba(255, 30, 158, 0.4);
 }
 
 .wizard-option-card.selected {
   border-color: var(--accent-cyan);
-  background: rgba(34, 211, 238, 0.08);
+  background: rgba(255, 30, 158, 0.08);
 }
 
 .wizard-option-price {
@@ -517,8 +517,8 @@
 }
 
 .points-toggle-row {
-  background: rgba(34, 211, 238, 0.05);
-  border: 1px solid rgba(34, 211, 238, 0.2);
+  background: rgba(255, 30, 158, 0.05);
+  border: 1px solid rgba(255, 30, 158, 0.2);
   border-radius: var(--radius-sm);
   padding: var(--space-sm) var(--space-md);
 }
@@ -539,7 +539,7 @@
 
 .dash-note {
   border-left: 3px solid var(--accent-cyan);
-  background: rgba(34, 211, 238, 0.05);
+  background: rgba(255, 30, 158, 0.05);
   color: var(--text-secondary);
   font-size: 0.85rem;
   padding: var(--space-sm) var(--space-md);
@@ -549,7 +549,7 @@
 
 .dash-note a {
   color: var(--accent-cyan);
-  border-bottom: 1px solid rgba(34, 211, 238, 0.3);
+  border-bottom: 1px solid rgba(255, 30, 158, 0.3);
 }
 
 .dash-error, .dash-success {
@@ -567,8 +567,8 @@
 }
 
 .dash-success {
-  background: rgba(34, 211, 238, 0.1);
-  border: 1px solid rgba(34, 211, 238, 0.3);
+  background: rgba(255, 30, 158, 0.1);
+  border: 1px solid rgba(255, 30, 158, 0.3);
   color: var(--accent-cyan);
 }
 
