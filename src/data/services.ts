@@ -29,9 +29,13 @@ export type ServiceCategory = {
 // Still the single source of truth for what things cost, and still kept
 // as code rather than a table: pricing is a display and computation
 // concern, and putting it in the database would mean a migration every
-// time a number moves. The legacy pages read the .js copy; the React
-// pages read this one. They have to agree, and the moment the request
-// wizard is rebuilt in React the .js copy goes.
+// time a number moves.
+//
+// Every page a client orders from now reads THIS file. public/
+// pricing-catalog.js survives only because services.html and
+// legacy-landing.html still render from it, and those are read-only price
+// lists -- nothing orders from them. The two still have to agree, so the
+// .js copy goes the moment those two pages are ported.
 //
 // Grouped by category rather than listed flat, because fifty services in
 // one grid is a price list, not a landing page. The category is what

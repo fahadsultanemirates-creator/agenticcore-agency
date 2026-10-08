@@ -1,6 +1,7 @@
 import { ArrowRight, Clock } from "lucide-react";
 import { SERVICE_COUNT, serviceCategories } from "../../data/services";
 import { Reveal } from "../Reveal";
+import { Link } from "react-router-dom";
 
 // Categories, not individual services. Fifty line items in one grid is a
 // price list; six cards is a choice. The items inside each card are what
@@ -23,8 +24,11 @@ export function ServicesGrid() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {serviceCategories.map((category, i) => (
             <Reveal key={category.id} delay={(i % 3) * 80} className="h-full">
-              <a
-                href={`/request.html?category=${encodeURIComponent(category.label)}`}
+              {/* ?service=<id>, which is what the request page reads. This
+                  passed ?category=<label> and the page ignored it, so every
+                  card dropped you on an empty wizard. */}
+              <Link
+                to={`/request?service=${category.id}`}
                 className="group relative flex h-full flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-all duration-200 hover:-translate-y-1 hover:border-yellow-400/40"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -68,19 +72,19 @@ export function ServicesGrid() {
                   </span>
                   <ArrowRight className="h-3.5 w-3.5 text-fg-faint transition-all group-hover:translate-x-0.5 group-hover:text-yellow-400" />
                 </div>
-              </a>
+              </Link>
             </Reveal>
           ))}
         </div>
 
         <div className="mt-10 flex justify-center">
-          <a
-            href="/signup.html"
+          <Link
+            to="/signup"
             className="inline-flex items-center gap-2 rounded-full bg-yellow-400 px-6 py-3 text-sm font-semibold text-void shadow-glow-yellow transition-transform hover:-translate-y-0.5"
           >
             Create an account to start
             <ArrowRight className="h-4 w-4" />
-          </a>
+          </Link>
         </div>
       </div>
     </section>

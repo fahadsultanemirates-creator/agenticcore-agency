@@ -1,3 +1,4 @@
+import { ChatLauncher } from "../components/ChatLauncher";
 import { CtaBanner } from "../components/landing/CtaBanner";
 import { Footer } from "../components/landing/Footer";
 import { Hero } from "../components/landing/Hero";
@@ -22,6 +23,7 @@ export function Landing() {
         <CtaBanner />
       </main>
       <Footer />
+      <ChatLauncher />
     </div>
   );
 }
