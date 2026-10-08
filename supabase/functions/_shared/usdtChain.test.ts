@@ -8,6 +8,8 @@ import {
   chunkRanges,
   coldStartBlock,
   decodeStringResult,
+  looksLikeHttpUrl,
+  safeHost,
   scanStart,
   toLogTransfer,
   MAX_CHUNKS_PER_SWEEP,
@@ -263,6 +265,57 @@ test('a normal minute is one chunk, not twelve', () => {
 
 test('the per-sweep ceiling stays small enough to be served', () => {
   assert.ok(MAX_CHUNKS_PER_SWEEP <= 4, `${MAX_CHUNKS_PER_SWEEP} wide getLogs calls a minute is what got us rate-limited`);
+});
+
+
+// ---- never publish the RPC key ----------------------------------------
+//
+// usdt-check answers without a JWT and puts these errors in its response
+// body, so anything that survives into a message is served to anyone who
+// POSTs an empty object at it. A provider endpoint carries its key in the
+// path, so the host itself is the secret.
+
+test('a keyed endpoint is reduced to its origin', () => {
+  assert.equal(
+    safeHost('https://bsc-mainnet.nodereal.io/v1/4ee23929011d43b0b0579dab9bbe74cd'),
+    'https://bsc-mainnet.nodereal.io'
+  );
+});
+
+test('a key in the query string does not survive either', () => {
+  assert.equal(safeHost('https://example.org/rpc?apikey=sekret'), 'https://example.org');
+  assert.equal(safeHost('https://user:pass@example.org/rpc'), 'https://example.org');
+});
+
+test('a value that is not a URL is never echoed back', () => {
+  // The real mistake: the bare API key pasted into BSC_RPC_URL. fetch
+  // throws "Invalid URL: '<the key>'", and that message was being quoted
+  // into an unauthenticated response.
+  assert.equal(safeHost('4ee23929011d43b0b0579dab9bbe74cd'), '<malformed BSC_RPC_URL>');
+  assert.ok(!safeHost('4ee23929011d43b0b0579dab9bbe74cd').includes('4ee2'));
+});
+
+test('a plain public host is left readable', () => {
+  // Redaction must not cost us the diagnostics that made the dataseed
+  // failure legible in the first place.
+  assert.equal(safeHost('https://bsc.drpc.org'), 'https://bsc.drpc.org');
+});
+
+
+// A malformed BSC_RPC_URL must degrade us, never stop us. The bare API
+// key pasted into that field replaced every host with itself, fetch
+// refused all of them, and payments went off entirely -- one dashboard
+// typo, total outage.
+test('a bare API key is not a usable host', () => {
+  assert.equal(looksLikeHttpUrl('4ee23929011d43b0b0579dab9bbe74cd'), false);
+  assert.equal(looksLikeHttpUrl(''), false);
+  assert.equal(looksLikeHttpUrl('bsc-mainnet.nodereal.io/v1/abc'), false, 'no scheme is not a URL');
+  assert.equal(looksLikeHttpUrl('ws://bsc-mainnet.nodereal.io/v1/abc'), false, 'we speak HTTP here');
+});
+
+test('a real endpoint is usable', () => {
+  assert.equal(looksLikeHttpUrl('https://bsc-mainnet.nodereal.io/v1/4ee23929011d43b0'), true);
+  assert.equal(looksLikeHttpUrl('http://localhost:8545'), true);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
