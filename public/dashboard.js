@@ -115,73 +115,18 @@ async function renderBillingPanel(userId) {
 }
 
 // -------- Checkout --------
-// 30% due upfront, same split shown to visitors on services.html/terms.html.
+// 30% due upfront, same split shown to visitors on services.html and
+// terms.html. The server recomputes it from the request's own agreed_price
+// (supabase/functions/_shared/pricing.ts) and its figure is what gets
+// quoted; this copy is only what the page shows while the invoice opens.
 const UPFRONT_FRACTION = 0.3;
-
-const USDT_BEP20_ADDRESS = '0x62Ad7D55fbc8A8591109D72b67Ec63aa1EE196bC';
-const AC_TOKEN_CONTRACT_ADDRESS = '0xe9568888a0bc317519957047cf736e134B097768';
-const AC_TOKEN_DISCOUNT_PCT = 15;
-const AC_TOKEN_BUY_URL = null;
 
 function upfrontAmountDue(agreedPrice) {
   return Math.round(agreedPrice * UPFRONT_FRACTION * 100) / 100;
 }
 
-function renderPaymentCTA(container, { requestId, amountDue }) {
-  const wrap = document.createElement('div');
-  wrap.style.marginTop = 'var(--space-sm, 0.75rem)';
-  wrap.style.display = 'flex';
-  wrap.style.flexWrap = 'wrap';
-  wrap.style.gap = 'var(--space-md, 1rem)';
-
-  const usdtCol = document.createElement('div');
-  usdtCol.innerHTML = `
-    <p class="dash-card-note" style="margin:0 0 0.4rem;">Pay ${formatMoney(amountDue)} in USDT (BEP20 / BNB Smart Chain):</p>
-    <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
-      <img src="usdt-bep20-qr.png" alt="USDT BEP20 address QR code" style="width:80px;height:80px;border-radius:6px;">
-      <div>
-        <code style="font-size:0.8rem;word-break:break-all;">${USDT_BEP20_ADDRESS}</code><br>
-        <button type="button" class="btn btn-secondary btn-sm copy-usdt-address-btn" style="margin-top:0.3rem;">Copy address</button>
-      </div>
-    </div>
-  `;
-  wrap.appendChild(usdtCol);
-
-  const acAmountDue = Math.round(amountDue * (1 - AC_TOKEN_DISCOUNT_PCT / 100) * 100) / 100;
-  const acCol = document.createElement('div');
-  acCol.innerHTML = `
-    <p class="dash-card-note" style="margin:0 0 0.4rem;">Or pay ${formatMoney(acAmountDue)} in AC token (${AC_TOKEN_DISCOUNT_PCT}% off for paying in AC) — same wallet address as USDT:</p>
-    <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
-      <div>
-        <code style="font-size:0.8rem;word-break:break-all;">${USDT_BEP20_ADDRESS}</code><br>
-        <button type="button" class="btn btn-secondary btn-sm copy-ac-address-btn" style="margin-top:0.3rem;">Copy address</button>
-      </div>
-    </div>
-    <p class="dash-card-note" style="margin:0.4rem 0 0;">AC token contract: <a href="https://bscscan.com/token/${AC_TOKEN_CONTRACT_ADDRESS}" target="_blank" rel="noopener"><code style="font-size:0.75rem;">${AC_TOKEN_CONTRACT_ADDRESS}</code></a>${AC_TOKEN_BUY_URL ? ` — <a href="${AC_TOKEN_BUY_URL}" target="_blank" rel="noopener">Buy AC token</a>` : ''}</p>
-  `;
-  wrap.appendChild(acCol);
-
-  const noteEl = document.createElement('p');
-  noteEl.className = 'dash-card-note';
-  noteEl.style.cssText = 'margin:0.4rem 0 0;width:100%;';
-  noteEl.innerHTML = `After sending, message us on <a href="https://t.me/agenticcore_support" target="_blank" rel="noopener">Telegram</a> with your request ID (<code>${requestId}</code>) and transaction hash so we can confirm it — both USDT and AC token payments are verified manually.`;
-  wrap.appendChild(noteEl);
-
-  wrap.querySelector('.copy-usdt-address-btn').addEventListener('click', (e) => {
-    navigator.clipboard.writeText(USDT_BEP20_ADDRESS).then(() => {
-      e.target.textContent = 'Copied!';
-      setTimeout(() => { e.target.textContent = 'Copy address'; }, 1500);
-    });
-  });
-  wrap.querySelector('.copy-ac-address-btn').addEventListener('click', (e) => {
-    navigator.clipboard.writeText(USDT_BEP20_ADDRESS).then(() => {
-      e.target.textContent = 'Copied!';
-      setTimeout(() => { e.target.textContent = 'Copy address'; }, 1500);
-    });
-  });
-
-  container.appendChild(wrap);
-}
+// renderPaymentCTA, the wallet address and the AC token details all live in
+// usdt-payment.js, loaded before this file.
 
 // -------- AgenticCore Packages --------
 function initPackagesTab(profile) {
