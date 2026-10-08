@@ -342,53 +342,6 @@ svg[hidden] {
   padding: 0.9rem 1.8rem;
 }
 
-.hero-chat-lead {
-  margin: var(--space-lg) 0 var(--space-sm);
-  font-size: 0.85rem;
-  color: var(--text-tertiary);
-}
-
-.hero-chat-actions {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-sm);
-  flex-wrap: wrap;
-}
-
-.btn-chat {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.55rem;
-  padding: 0.75rem 1.4rem;
-  border-radius: var(--radius-md);
-  font-family: var(--font-body);
-  font-size: 0.92rem;
-  font-weight: 600;
-  color: #fff;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.btn-chat svg {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.btn-chat:hover {
-  transform: translateY(-2px);
-}
-
-.btn-chat-telegram {
-  background: #229ED9;
-  box-shadow: 0 6px 20px rgba(34, 158, 217, 0.35);
-}
-
-.btn-chat-whatsapp {
-  background: #25D366;
-  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
-}
-
 /* ============================================
    Section shared
    ============================================ */
@@ -603,28 +556,6 @@ section {
 }
 
 /* ============================================
-   Dashboard preview
-   ============================================ */
-
-.preview-section {
-  position: relative;
-}
-
-.preview-frame {
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-subtle);
-  overflow: hidden;
-  box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.6);
-}
-
-.preview-frame img {
-  width: 100%;
-  height: auto;
-  max-width: 100%;
-  display: block;
-}
-
-/* ============================================
    VIP / Referral strip
    ============================================ */
 
@@ -833,32 +764,16 @@ section {
 }
 
 /* ============================================
-   Trading teaser (landing page image + text)
+   Trading teaser (landing page, text-only)
    ============================================ */
 
-.trading-teaser .container {
-  display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
-  gap: var(--space-xl);
-  align-items: center;
+.trading-teaser-text {
+  max-width: 640px;
+  margin: 0 auto;
+  text-align: center;
 }
 
-.trading-teaser-media {
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  border: 1px solid var(--border-subtle);
-  box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.6);
-}
-
-.trading-teaser-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  max-height: 420px;
-}
-
-.trading-teaser-text .section-eyebrow {
+.trading-teaser-text .panel-list {
   text-align: left;
 }
 
@@ -870,16 +785,4 @@ section {
 .trading-teaser-text > p {
   color: var(--text-secondary);
   margin-bottom: var(--space-md);
-}
-
-@media (max-width: 860px) {
-  .trading-teaser .container {
-    grid-template-columns: 1fr;
-  }
-  .trading-teaser-media {
-    order: -1;
-  }
-  .trading-teaser-media img {
-    max-height: 280px;
-  }
 }
