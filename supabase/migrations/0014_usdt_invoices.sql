@@ -330,7 +330,18 @@ select cron.schedule(
   select net.http_post(
     url := 'https://ggyphnbnndfuxgkoakhs.supabase.co/functions/v1/usdt-check',
     headers := '{"Content-Type": "application/json"}'::jsonb,
-    body := '{}'::jsonb
+    body := '{}'::jsonb,
+    -- pg_net defaults to 5 seconds, and the sweep outlives that: a cold
+    -- Deno boot, the contract check, a block read and a getLogs call.
+    -- The function still finishes -- the cursor moves either way -- but
+    -- pg_net stops waiting and records a timeout in place of the answer,
+    -- which throws away the only view there is of whether the sweep is
+    -- working. That view is how the first stall was diagnosed at all, so
+    -- losing it silently every minute is worse than it sounds.
+    --
+    -- 25s is past a cold start and still well inside the minute between
+    -- runs, so two sweeps never overlap.
+    timeout_milliseconds := 25000
   )
   where exists (select 1 from public.usdt_invoices where status = 'pending');
   $sql$

@@ -45,57 +45,131 @@ const EXPECTED_SYMBOLS = ['USDT', 'BSC-USD', 'BSC-USDT'];
 export const MIN_CONFIRMATIONS = 15;
 
 /**
- * Plain BNB Smart Chain nodes. Everything on-chain goes through these.
+ * The public fallbacks. A fallback, not a foundation.
+ *
+ * BNB Chain's own documentation says eth_getLogs is DISABLED on the
+ * public mainnet dataseeds -- it is not a rate limit, the method is not
+ * served, and "-32005 limit exceeded" is how they say no. The first real
+ * order died here: three dataseeds, three refusals, and a client watching
+ * a spinner over a payment that was already on-chain.
+ *
+ * So the order matters. The hosts that actually serve eth_getLogs come
+ * first; the dataseeds stay behind them because they are perfectly good
+ * for the cheap calls -- eth_blockNumber, and the two eth_calls that
+ * verify the contract -- and cost nothing to try.
+ *
+ * The durable answer is a provider endpoint in BSC_RPC_URL.
+ */
+const PUBLIC_HOSTS = [
+  // Serve eth_getLogs.
+  'https://binance.llamarpc.com',
+  'https://bsc.drpc.org',
+  'https://bsc.publicnode.com',
+  // Do not serve eth_getLogs, but answer everything else.
+  'https://bsc-dataseed.bnbchain.org',
+  'https://bsc-dataseed1.bnbchain.org',
+  'https://bsc-dataseed2.bnbchain.org',
+  'https://bsc-dataseed.binance.org',
+  'https://bsc-dataseed1.defibit.io',
+  'https://bsc-dataseed2.defibit.io',
+  'https://bsc-dataseed1.ninicoin.io'
+];
+
+/** Cheap shape check, so a bare API key never becomes the only host. */
+export function looksLikeHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value);
+    return protocol === 'http:' || protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Where every on-chain read goes, best first.
  *
  * Read when used rather than at module scope: an env read at import time
  * makes the whole module unloadable outside Deno, so the pure decoders
  * below -- the part most worth testing -- could not be tested at all.
  *
- * decimals() and symbol() are an ordinary eth_call, which every node
- * serves for free. Going through the block explorer's proxy module meant
- * the read inherited that API's key handling and its multichain routing,
- * and the first live check failed there -- the explorer answered, it was
- * not refusing the key, and what came back still was not hex.
+ * BSC_RPC_URL is comma-separated, so a provider endpoint can lead and the
+ * public nodes still back it up. The public list is ALWAYS appended
+ * rather than replaced: a provider having a bad minute should degrade us,
+ * not stop us.
  */
 function rpcHosts(): string[] {
-  // Comma-separated, so the owner can put a keyed endpoint first and keep
-  // the public ones as fallbacks. One URL still works.
   const configured = Deno.env.get('BSC_RPC_URL');
   if (configured) {
-    const hosts = configured.split(',').map((h) => h.trim()).filter(Boolean);
-    if (hosts.length > 0) return hosts;
+    const entries = configured.split(',').map((h) => h.trim()).filter(Boolean);
+    const usable = entries.filter(looksLikeHttpUrl);
+
+    if (usable.length > 0) return [...usable, ...PUBLIC_HOSTS];
+
+    // Set, but to nothing callable. Falling through to the public list is
+    // the difference between degraded and down -- and down is what
+    // actually happened: a bare API key was pasted here, every host in
+    // the list became that key, and fetch refused all of them. One
+    // dashboard typo took payments off entirely.
+    //
+    // Loud, because a silent fallback leaves the owner believing they are
+    // on a provider endpoint when they are not, and the public ones do
+    // not serve eth_getLogs.
+    console.error(
+      `BSC_RPC_URL is set but holds no usable http(s) URL (${entries.length} value(s)). ` +
+        'Falling back to public nodes, which do NOT serve eth_getLogs. ' +
+        'It must be the full endpoint URL from your provider, not the bare API key.'
+    );
   }
 
-  // SET BSC_RPC_URL. These are a fallback, not a foundation.
-  //
-  // BNB Chain's own documentation says eth_getLogs is DISABLED on the
-  // public mainnet dataseeds -- it is not a rate limit, the method is not
-  // served, and "-32005 limit exceeded" is how they say no. The first
-  // real order died here: three dataseeds, three refusals, and a client
-  // watching a spinner over a payment that was already on-chain.
-  //
-  // So the order matters. The hosts that actually serve eth_getLogs come
-  // first; the dataseeds are kept behind them because they are perfectly
-  // good for the cheap calls (eth_blockNumber, and the two eth_calls that
-  // verify the contract) and cost nothing to try.
-  //
-  // The durable answer is a provider endpoint in BSC_RPC_URL. NodeReal's
-  // MegaNode free tier is a fit -- BSC mainnet, no card, and its
-  // eth_getLogs window is far wider than the 1000 blocks asked for here.
-  return [
-    // Serve eth_getLogs.
-    'https://binance.llamarpc.com',
-    'https://bsc.drpc.org',
-    'https://bsc.publicnode.com',
-    // Do not serve eth_getLogs, but answer everything else.
-    'https://bsc-dataseed.bnbchain.org',
-    'https://bsc-dataseed1.bnbchain.org',
-    'https://bsc-dataseed2.bnbchain.org',
-    'https://bsc-dataseed.binance.org',
-    'https://bsc-dataseed1.defibit.io',
-    'https://bsc-dataseed2.defibit.io',
-    'https://bsc-dataseed1.ninicoin.io'
-  ];
+  return PUBLIC_HOSTS;
+}
+
+/**
+ * A host, safe to put in an error message.
+ *
+ * BSC_RPC_URL points at a provider endpoint with the API key baked into
+ * the path -- that is how NodeReal, Alchemy and the rest hand them out.
+ * Every failure in this file names the host it came from, which is what
+ * makes the errors worth reading, and usdt-check puts that detail in its
+ * HTTP response. usdt-check answers without a JWT, so an unredacted host
+ * means the key is served to anyone who POSTs an empty body at it.
+ *
+ * Found the moment a key was first configured: the sweep answered
+ * "<the key> did not answer (Invalid URL)" in a body anyone could fetch.
+ * Only the origin survives; the path, the query string and anything else
+ * that could carry a credential do not.
+ */
+export function safeHost(url: string): string {
+  try {
+    const parsed = new URL(url);
+    // A key in the userinfo or the query string goes too.
+    return `${parsed.protocol}//${parsed.host}`;
+  } catch {
+    // Not a URL at all -- which is itself the bug worth reporting, and
+    // the value may well BE a bare key, so it must not be echoed.
+    return '<malformed BSC_RPC_URL>';
+  }
+}
+
+/**
+ * The last word before an error leaves this file.
+ *
+ * safeHost covers what WE interpolate. It does not cover what the
+ * runtime says: fetch throws "Invalid URL: '<the whole value>'", and
+ * that message is quoted straight into the problem list. So every
+ * configured host is scrubbed out of the finished string as well.
+ *
+ * Belt and braces on purpose. This string ends up in an HTTP response
+ * from an endpoint that needs no JWT, so a miss here is a published
+ * credential, and the two guards fail independently.
+ */
+function scrubSecrets(message: string): string {
+  let out = message;
+  for (const host of rpcHosts()) {
+    if (!host) continue;
+    out = out.split(host).join(safeHost(host));
+  }
+  return out;
 }
 
 /** One eth_call against the first node that answers. */
@@ -116,7 +190,7 @@ async function ethCall(to: string, data: string): Promise<string> {
         signal: AbortSignal.timeout(10_000)
       });
       if (!resp.ok) {
-        problems.push(`${host} returned ${resp.status}`);
+        problems.push(`${safeHost(host)} returned ${resp.status}`);
         continue;
       }
       const body = await resp.json();
@@ -126,16 +200,16 @@ async function ethCall(to: string, data: string): Promise<string> {
       // Whatever it is, say what it is. "Could not read decimals()" on its
       // own cost a round trip because it named the field and not the
       // answer.
-      problems.push(`${host} answered ${JSON.stringify(body).slice(0, 160)}`);
+      problems.push(`${safeHost(host)} answered ${JSON.stringify(body).slice(0, 160)}`);
     } catch (err) {
-      problems.push(`${host} did not answer (${err instanceof Error ? err.message : String(err)})`);
+      problems.push(`${safeHost(host)} did not answer (${err instanceof Error ? err.message : String(err)})`);
     }
   }
 
   // Every host, not just the last. Keeping only the most recent failure
   // hid the real reason behind whichever host happened to be tried last,
   // which is how a dead fallback masked the live one.
-  throw new Error(problems.join(' | ') || 'No BNB Smart Chain node answered');
+  throw new Error(scrubSecrets(problems.join(' | ')) || 'No BNB Smart Chain node answered');
 }
 
 /** One JSON-RPC call against the first node that answers. */
@@ -151,22 +225,22 @@ async function rpc(method: string, params: unknown[]): Promise<unknown> {
         signal: AbortSignal.timeout(10_000)
       });
       if (!resp.ok) {
-        problems.push(`${host} returned ${resp.status}`);
+        problems.push(`${safeHost(host)} returned ${resp.status}`);
         continue;
       }
       const body = await resp.json() as { result?: unknown; error?: unknown };
       if (body?.error) {
-        problems.push(`${host}: ${JSON.stringify(body.error).slice(0, 160)}`);
+        problems.push(`${safeHost(host)}: ${JSON.stringify(body.error).slice(0, 160)}`);
         continue;
       }
       if (body?.result !== undefined) return body.result;
-      problems.push(`${host} answered ${JSON.stringify(body).slice(0, 160)}`);
+      problems.push(`${safeHost(host)} answered ${JSON.stringify(body).slice(0, 160)}`);
     } catch (err) {
-      problems.push(`${host} did not answer (${err instanceof Error ? err.message : String(err)})`);
+      problems.push(`${safeHost(host)} did not answer (${err instanceof Error ? err.message : String(err)})`);
     }
   }
 
-  throw new Error(problems.join(' | ') || `No node answered ${method}`);
+  throw new Error(scrubSecrets(problems.join(' | ')) || `No node answered ${method}`);
 }
 
 /**
