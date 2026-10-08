@@ -1,4 +1,4 @@
-// Reading BNB Smart Chain, through Etherscan's API rather than our own node.
+// Reading BNB Smart Chain, through plain JSON-RPC against public nodes.
 //
 // Two jobs: list the USDT transfers that arrived at our address, and prove
 // the contract we are watching is actually USDT before we trust a single
@@ -56,10 +56,6 @@ export const MIN_CONFIRMATIONS = 15;
  * the read inherited that API's key handling and its multichain routing,
  * and the first live check failed there -- the explorer answered, it was
  * not refusing the key, and what came back still was not hex.
- *
- * The explorer is still used for the transfer list, because listing every
- * token transfer to an address genuinely needs an indexer. Reading a
- * constant off a contract does not.
  */
 function rpcHosts(): string[] {
   const configured = Deno.env.get('BSC_RPC_URL');
@@ -203,21 +199,6 @@ export function decodeStringResult(hex: string): string {
   return new TextDecoder().decode(out).replace(/\0+$/, '');
 }
 
-/**
- * Transfer events are logs, and logs are a standard RPC read.
- *
- * This went through a block explorer first, on the reasoning that listing
- * every transfer to an address needs an indexer. It does -- for all time.
- * It does not for the last hour, which is all this ever needs: an invoice
- * expires in sixty minutes, so a payment older than that belongs to no
- * open invoice and reading further back only costs time.
- *
- * Narrowing the question that way removes the explorer, its API key, and
- * everything that went with it -- a v2 proxy module that would not serve
- * eth_call, a BscScan host that now answers HTML, and a key whose refusal
- * arrived as HTTP 200.
- */
-
 /** keccak256("Transfer(address,address,uint256)"). */
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
 
@@ -299,32 +280,6 @@ export async function currentBlock(): Promise<bigint> {
   const headHex = await rpc('eth_blockNumber', []);
   if (typeof headHex !== 'string') throw new Error(`eth_blockNumber returned ${JSON.stringify(headHex)}`);
   return BigInt(headHex);
-}
-
-/** The recent USDT transfers into our receiving address. */
-export async function recentTransfers(): Promise<Transfer[]> {
-  const headHex = await rpc('eth_blockNumber', []);
-  if (typeof headHex !== 'string') throw new Error(`eth_blockNumber returned ${JSON.stringify(headHex)}`);
-  const head = BigInt(headHex);
-  const from = head > BigInt(LOOKBACK_BLOCKS) ? head - BigInt(LOOKBACK_BLOCKS) : 0n;
-
-  const logs = await rpc('eth_getLogs', [
-    {
-      address: USDT_CONTRACT,
-      fromBlock: '0x' + from.toString(16),
-      toBlock: 'latest',
-      // [event, from (any), to (us)]. Filtering on the recipient at the
-      // node means it returns our transfers rather than every USDT
-      // movement on the chain.
-      topics: [TRANSFER_TOPIC, null, addressTopic(RECEIVING_ADDRESS)]
-    }
-  ]);
-
-  if (!Array.isArray(logs)) throw new Error(`eth_getLogs returned ${JSON.stringify(logs).slice(0, 200)}`);
-
-  return logs
-    .map((raw) => toLogTransfer(raw as Record<string, unknown>, head))
-    .filter((t): t is Transfer => t !== null);
 }
 
 /**
