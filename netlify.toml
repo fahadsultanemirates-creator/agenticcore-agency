@@ -3,6 +3,14 @@
 # stated here -- a repo-level netlify.toml overrides the dashboard
 # settings, which means this file is the one place the two can be kept
 # in step.
+#
+# IT ALSO APPLIES TO EVERY OTHER NETLIFY SITE BUILT FROM THIS REPO that
+# has no Base directory of its own, which is how adding it broke the
+# ac-agency-0002 client site: that site was reading this file, and was
+# suddenly told to build the marketing app and publish dist/. A site
+# WITH a base directory reads the netlify.toml in that directory instead
+# and never sees this one, which is why jobs/README.md tells you to set
+# it, and why each job folder now carries its own config.
 [build]
   command = "npm run build"
   publish = "dist"

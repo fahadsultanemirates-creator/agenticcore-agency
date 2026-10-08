@@ -20,7 +20,12 @@ first commit has landed under `jobs/AC-AGENCY-XXXX/`:
 1. Netlify dashboard → **Add new site → Import an existing project**.
 2. Connect the same GitHub repo (`fahadsultanemirates-creator/agenticcore-agency`).
 3. Under **Build settings**:
-   - **Base directory**: `jobs/AC-AGENCY-XXXX` (the exact job folder)
+   - **Base directory**: `jobs/AC-AGENCY-XXXX` (the exact job folder).
+     NOT OPTIONAL. The repo root now carries a netlify.toml with a build
+     command, and every site linked to this repo WITHOUT a base
+     directory reads it -- so a job site without one will try to build
+     the marketing app and fail. Setting the base directory makes
+     Netlify read that folder's own netlify.toml instead.
    - **Build command**: leave empty — these are plain static files, no build step
    - **Publish directory**: `.` (i.e. the base directory itself)
 4. Deploy. Netlify assigns a random subdomain

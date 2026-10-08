@@ -1,0 +1,18 @@
+# This job's own build config, as jobs/README.md prescribes.
+#
+# It exists because the marketing site gained a build step. Netlify reads
+# netlify.toml from a site's BASE DIRECTORY, and this site was linked
+# without one -- so it was reading the repo root, and the moment the root
+# gained `command = "npm run build"` and `publish = "dist"` this site
+# started trying to build the marketing app and publish a directory that
+# has nothing to do with the client's website. It failed with exit code 2.
+#
+# Two halves to the fix and only one of them is a file: this half, and
+# setting this site's Base directory to jobs/AC-AGENCY-0002 in Netlify.
+# Until the base directory is set, Netlify never reads this file.
+#
+# Base directory also buys deploy-skipping: Netlify only rebuilds this
+# site when a commit touches files under this folder, so the marketing
+# site's commits stop waking it at all.
+[build]
+  publish = "."
