@@ -50,11 +50,6 @@ if (googleAuthBtn) {
 
 // -------- SIGN UP --------
 const signupForm = document.getElementById('signupForm');
-const referralCodeInput = document.getElementById('referralCode');
-if (referralCodeInput) {
-  const refFromLink = new URLSearchParams(window.location.search).get('ref');
-  if (refFromLink) referralCodeInput.value = refFromLink;
-}
 if (signupForm) {
   signupForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -65,7 +60,6 @@ if (signupForm) {
     const name = document.getElementById('fullName').value.trim();
     const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const referralCode = referralCodeInput.value.trim().toUpperCase() || null;
 
     if (password.length < 8) {
       showAuthError(errorEl, 'Password must be at least 8 characters.');
@@ -79,8 +73,7 @@ if (signupForm) {
       password,
       options: {
         data: {
-          full_name: name,
-          referred_by: referralCode
+          full_name: name
         }
       }
     });

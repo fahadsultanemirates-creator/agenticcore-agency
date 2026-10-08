@@ -31,6 +31,7 @@
   padding-bottom: var(--space-2xl);
   border-bottom: 1px solid var(--border-subtle);
   margin-bottom: var(--space-2xl);
+  scroll-margin-top: 90px;
 }
 
 .deep-block:last-child {
