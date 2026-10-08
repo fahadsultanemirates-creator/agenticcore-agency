@@ -24,6 +24,7 @@ import {
   chainConfigured,
   coldStartBlock,
   currentBlock,
+  scanStart,
   MIN_CONFIRMATIONS,
   RECEIVING_ADDRESS,
   transfersSince,
@@ -71,23 +72,26 @@ async function resolveCaller(authHeader: string): Promise<{ id: string } | null>
  * storing a number that was true once is how a one-confirmation payment
  * gets treated as settled forever.
  */
-async function ingest(): Promise<{ head: bigint; caughtUp: boolean }> {
+async function ingest(oldestPendingBlock: bigint | null): Promise<{ head: bigint; caughtUp: boolean }> {
+  const head = await currentBlock();
+
   const { data: state } = await supabaseAdmin
     .from('usdt_scan_state')
     .select('last_block')
     .maybeSingle<{ last_block: string }>();
 
-  let from: bigint;
-  if (state?.last_block != null) {
-    from = BigInt(state.last_block) + 1n;
-  } else {
-    // First ever run. Start a little way back rather than at the head, so
-    // a payment made in the minute before this was first deployed is still
-    // picked up.
-    from = coldStartBlock(await currentBlock());
+  // Where to start, including the floor at the oldest open invoice --
+  // see scanStart, which is pure and tested because getting it wrong
+  // either stalls the sweep or steps over somebody's payment.
+  const lastBlock = state?.last_block == null ? null : BigInt(state.last_block);
+  const from = scanStart({ lastBlock, oldestPendingBlock, head });
+
+  if (lastBlock !== null && from > lastBlock + 1n) {
+    console.log(`usdt-check: skipped ${from - lastBlock - 1n} blocks older than any open invoice`);
   }
 
-  const { head, scannedTo, transfers, caughtUp } = await transfersSince(from);
+  const { head: scanHead, scannedTo, transfers, caughtUp } = await transfersSince(from, head);
+  void scanHead;
 
   if (transfers.length > 0) {
     // Upserted, because a sweep that dies after the node call but before
@@ -120,6 +124,20 @@ async function ingest(): Promise<{ head: bigint; caughtUp: boolean }> {
   }
 
   return { head, caughtUp };
+}
+
+/** The opening height of the oldest invoice still waiting to be paid. */
+async function oldestPendingFromBlock(): Promise<bigint | null> {
+  const { data } = await supabaseAdmin
+    .from('usdt_invoices')
+    .select('from_block')
+    .eq('status', 'pending')
+    .not('from_block', 'is', null)
+    .order('from_block', { ascending: true })
+    .limit(1)
+    .maybeSingle<{ from_block: string }>();
+
+  return data?.from_block == null ? null : BigInt(data.from_block);
 }
 
 /** Transfers that could still settle this invoice, deepest first. */
@@ -373,7 +391,7 @@ export async function handleRequest(req: Request): Promise<Response> {
   let head: bigint;
   let caughtUp: boolean;
   try {
-    ({ head, caughtUp } = await ingest());
+    ({ head, caughtUp } = await ingest(await oldestPendingFromBlock()));
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error('usdt-check: could not read the chain', detail);

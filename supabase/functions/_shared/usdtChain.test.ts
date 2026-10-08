@@ -8,7 +8,9 @@ import {
   chunkRanges,
   coldStartBlock,
   decodeStringResult,
+  scanStart,
   toLogTransfer,
+  MAX_CHUNKS_PER_SWEEP,
   MAX_RANGE_BLOCKS
 } from './usdtChain.ts';
 
@@ -197,6 +199,71 @@ test('the log index is carried through, hex or number', () => {
   assert.equal(toLogTransfer(log({ logIndex: 'banana' }), 200n)?.logIndex, 0);
 });
 
+
+
+// ---- where a sweep starts --------------------------------------------
+//
+// This is the bug that cost the first real order. The cron only runs
+// while an invoice is open, so the cursor stops moving the moment the
+// last one settles. Two and a half quiet hours later a client ordered a
+// logo, and the sweep set out to scan the 19,010 blocks between the stale
+// cursor and the new invoice -- every one of them older than the invoice,
+// so not one of them could have held the payment. Twelve wide eth_getLogs
+// calls a minute, "-32005 limit exceeded" from every free node, and a
+// client watching a spinner over money that was already on-chain.
+
+test('the oldest open invoice is the floor', () => {
+  // The exact shape of the live failure.
+  assert.equal(
+    scanStart({ lastBlock: 126429328n, oldestPendingBlock: 126448338n, head: 126448400n }),
+    126448338n
+  );
+});
+
+test('a cursor already past the invoice is not dragged backwards', () => {
+  // An invoice opened an hour ago must not re-scan blocks already
+  // recorded -- that is wasted budget, and it re-reports transfers.
+  assert.equal(
+    scanStart({ lastBlock: 500n, oldestPendingBlock: 100n, head: 1000n }),
+    501n
+  );
+});
+
+test('with nothing pending the cursor simply carries on', () => {
+  assert.equal(scanStart({ lastBlock: 500n, oldestPendingBlock: null, head: 1000n }), 501n);
+});
+
+test('a cold start looks back, and the floor still applies', () => {
+  // Nothing scanned yet, no invoice: the lookback window.
+  assert.equal(scanStart({ lastBlock: null, oldestPendingBlock: null, head: 60_000_000n }), 59_998_500n);
+  // Nothing scanned yet, but an invoice newer than the lookback: start at
+  // the invoice, not 1500 blocks of someone else's payments before it.
+  assert.equal(
+    scanStart({ lastBlock: null, oldestPendingBlock: 59_999_900n, head: 60_000_000n }),
+    59_999_900n
+  );
+  // An invoice OLDER than the lookback wins too, and this is the case
+  // that nearly got written the other way round: an invoice is payable
+  // for 24 hours, so on a cold start it can easily sit further back than
+  // the 1500-block window. Clamping to the window there would step over
+  // the blocks its payment is in and never look at them again.
+  assert.equal(
+    scanStart({ lastBlock: null, oldestPendingBlock: 59_990_000n, head: 60_000_000n }),
+    59_990_000n
+  );
+});
+
+test('a normal minute is one chunk, not twelve', () => {
+  // BNB mines roughly 80 blocks a minute. With the floor in place that is
+  // the whole job, and a sweep costs one eth_blockNumber plus one
+  // eth_getLogs -- which is what a free public node will actually serve.
+  const start = scanStart({ lastBlock: 126448338n, oldestPendingBlock: 126448338n, head: 126448418n });
+  assert.equal(chunkRanges(start, 126448418n).length, 1);
+});
+
+test('the per-sweep ceiling stays small enough to be served', () => {
+  assert.ok(MAX_CHUNKS_PER_SWEEP <= 4, `${MAX_CHUNKS_PER_SWEEP} wide getLogs calls a minute is what got us rate-limited`);
+});
 
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
