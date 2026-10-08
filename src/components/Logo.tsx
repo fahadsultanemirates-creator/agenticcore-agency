@@ -1,12 +1,18 @@
+import logoLockup from "../assets/logo-lockup.webp";
+
+/**
+ * The whole lockup as one image, the way .click's is.
+ *
+ * The black field is keyed out, so it sits on --color-void with no plate
+ * and the glow falls off into the page. It stacks, so it needs the
+ * height: much below h-11 the wordmark stops being readable.
+ */
 export function Logo({ className = "", compact = false }: { className?: string; compact?: boolean }) {
   return (
-    <span className={`flex items-center gap-2.5 ${className}`}>
-      <img src="/logo-mark.png" alt="" aria-hidden className="h-9 w-9 shrink-0 rounded-xl object-contain" />
-      {!compact && (
-        <span className="font-display text-xl font-semibold tracking-tight whitespace-nowrap text-fg">
-          AgenticCore<span className="font-sans text-base font-medium text-fg-muted">.Agency</span>
-        </span>
-      )}
-    </span>
+    <img
+      src={logoLockup}
+      alt="AgenticCore.Agency"
+      className={`${compact ? "h-11" : "h-12"} w-auto shrink-0 ${className}`}
+    />
   );
 }
