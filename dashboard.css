@@ -742,3 +742,281 @@
     bottom: var(--space-sm);
   }
 }
+
+/* ============================================
+   Dashboard shell: left sidebar + top bar
+   Used by dashboard.html, projects.html, request.html -- forge.html
+   has its own full-viewport chrome instead (see forge.css).
+   ============================================ */
+
+.dash-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.dash-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 72px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-panel);
+  border-right: 1px solid var(--border-subtle);
+  overflow-y: auto;
+}
+
+@media (min-width: 860px) {
+  .dash-sidebar {
+    width: 240px;
+  }
+}
+
+.dash-sidebar-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dash-sidebar-logo img {
+  width: 30px;
+  height: 30px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+@media (min-width: 860px) {
+  .dash-sidebar-logo {
+    justify-content: flex-start;
+    padding: var(--space-md) var(--space-md);
+    gap: 0.6rem;
+  }
+}
+
+.dash-sidebar-nav {
+  flex: 1;
+  padding: var(--space-sm) 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+@media (min-width: 860px) {
+  .dash-sidebar-nav {
+    padding: var(--space-md) var(--space-sm);
+  }
+}
+
+.dash-sidebar-label {
+  display: none;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: var(--space-sm) 0.6rem 0.3rem;
+}
+
+@media (min-width: 860px) {
+  .dash-sidebar-label {
+    display: block;
+  }
+}
+
+.dash-sidebar-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  padding: 0.65rem;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+@media (min-width: 860px) {
+  .dash-sidebar-link {
+    justify-content: flex-start;
+    padding: 0.65rem 0.75rem;
+  }
+}
+
+.dash-sidebar-link:hover {
+  background: var(--bg-panel-hover);
+  color: var(--text-primary);
+}
+
+.dash-sidebar-link.active {
+  background: linear-gradient(160deg, var(--accent-cyan), var(--accent-blue));
+  color: var(--bg-primary);
+}
+
+.dash-sidebar-link svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+  stroke: currentColor;
+}
+
+.dash-sidebar-link span {
+  display: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (min-width: 860px) {
+  .dash-sidebar-link span {
+    display: inline;
+  }
+}
+
+.dash-sidebar-forge {
+  margin: var(--space-sm) 0.5rem;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+@media (min-width: 860px) {
+  .dash-sidebar-forge {
+    margin: var(--space-sm);
+  }
+}
+
+.dash-sidebar-forge .dash-sidebar-link {
+  color: var(--accent-cyan);
+}
+
+.dash-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.dash-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-lg);
+  background: rgba(10, 0, 7, 0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dash-topbar-crumb {
+  min-width: 0;
+}
+
+.dash-topbar-crumb p {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.dash-topbar-crumb h1 {
+  font-size: 1.15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+@media (max-width: 520px) {
+  .dash-topbar-exit {
+    display: none;
+  }
+}
+
+.dash-content {
+  flex: 1;
+  padding: var(--space-lg);
+  max-width: 1100px;
+  width: 100%;
+}
+
+@media (min-width: 860px) {
+  .dash-content {
+    padding: var(--space-xl) var(--space-2xl);
+  }
+}
+
+/* ============================================
+   Services grid (dashboard home's "New request")
+   ============================================ */
+
+.dash-services-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.85rem;
+}
+
+@media (min-width: 640px) {
+  .dash-services-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1000px) {
+  .dash-services-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.dash-service-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: var(--space-md);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.dash-service-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-cyan);
+}
+
+.dash-service-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 30, 158, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dash-service-card-icon svg {
+  width: 19px;
+  height: 19px;
+  stroke: var(--accent-cyan);
+}
+
+.dash-service-card h3 {
+  font-size: 0.95rem;
+}
+
+.dash-service-card p {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+}
