@@ -1,5 +1,6 @@
 import { ArrowRight } from "lucide-react";
 import { Reveal } from "../Reveal";
+import { Link } from "react-router-dom";
 
 export function CtaBanner() {
   return (
@@ -13,13 +14,13 @@ export function CtaBanner() {
             Open an account, describe the job, and you get a scope and a price back before anything
             is charged.
           </p>
-          <a
-            href="/signup.html"
+          <Link
+            to="/signup"
             className="relative mt-8 inline-flex items-center gap-2 rounded-full bg-void px-7 py-3.5 text-base font-semibold text-fg transition-transform hover:-translate-y-0.5"
           >
             Create your account
             <ArrowRight className="h-4 w-4" />
-          </a>
+          </Link>
         </div>
       </Reveal>
     </section>

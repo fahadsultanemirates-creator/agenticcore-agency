@@ -1,10 +1,12 @@
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { AccountMenu } from "../AccountMenu";
 import { Logo } from "../Logo";
 
-// Links point at the pre-React pages on purpose. They are real, working
-// pages at their own URLs; sending people to a route the React app does
-// not own yet would be a 404 dressed as progress.
+// In-page anchors, plus the one content page still served as a file.
+// Business Pool is a standalone pitch page, not part of the signed-in
+// flow, so it stays where it is until the content pages are ported.
 const LINKS = [
   { href: "#how-it-works", label: "How it works" },
   { href: "#services", label: "Services" },
@@ -30,10 +32,10 @@ export function Nav() {
       }`}
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
-        <a href="/" aria-label="AgenticCore Agency home" className="shrink-0">
+        <Link to="/" aria-label="AgenticCore Agency home" className="shrink-0">
           <Logo compact className="sm:hidden" />
-          <Logo className="hidden sm:flex" />
-        </a>
+          <Logo className="hidden sm:block" />
+        </Link>
 
         <nav className="hidden items-center gap-8 font-medium text-fg-muted lg:flex">
           {LINKS.map((link) => (
@@ -45,18 +47,7 @@ export function Nav() {
         </nav>
 
         <div className="flex shrink-0 items-center gap-2">
-          <a
-            href="/login.html"
-            className="hidden rounded-full border border-border px-4 py-2 text-sm font-semibold text-fg-muted transition-colors hover:border-yellow-400/50 hover:text-fg sm:inline-flex"
-          >
-            Log in
-          </a>
-          <a
-            href="/signup.html"
-            className="rounded-full bg-yellow-400 px-4 py-2 text-sm font-semibold text-void transition-transform hover:-translate-y-0.5"
-          >
-            Get started
-          </a>
+          <AccountMenu />
           <button
             type="button"
             onClick={() => setMenuOpen(!menuOpen)}
@@ -72,7 +63,7 @@ export function Nav() {
       {menuOpen && (
         <nav className="animate-fade-up border-t border-border bg-void px-4 pb-4 sm:px-6 lg:hidden">
           <ul className="flex flex-col py-2">
-            {[...LINKS, { href: "/login.html", label: "Log in" }].map((link) => (
+            {LINKS.map((link) => (
               <li key={link.href}>
                 <a
                   href={link.href}
@@ -83,6 +74,15 @@ export function Nav() {
                 </a>
               </li>
             ))}
+            <li>
+              <Link
+                to="/forge"
+                onClick={() => setMenuOpen(false)}
+                className="block rounded-xl px-3 py-3 font-medium text-yellow-400 transition-colors hover:bg-surface"
+              >
+                Chat with Forge
+              </Link>
+            </li>
           </ul>
         </nav>
       )}

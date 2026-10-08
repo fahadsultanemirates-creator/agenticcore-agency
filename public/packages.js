@@ -22,7 +22,7 @@ const LEGACY_TIER_DB_VALUE = 'low';
     if (!user) {
       btn.textContent = 'Log in to select';
       btn.addEventListener('click', () => {
-        window.location.href = 'login.html';
+        window.location.href = '/login';
       });
       return;
     }

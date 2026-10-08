@@ -1,6 +1,7 @@
 import { ArrowRight, Check } from "lucide-react";
 import { AGENTICCORE_PACKAGE } from "../../data/services";
 import { Reveal } from "../Reveal";
+import { Link } from "react-router-dom";
 
 // One bundle, not a tier ladder. The three-tier Low/Mid/High system was
 // already removed from the price sheet; selling it again here would be
@@ -56,13 +57,13 @@ export function PackageSection() {
               ))}
             </ul>
 
-            <a
-              href="/packages.html"
+            <Link
+              to="/request?package=1"
               className="mt-8 inline-flex items-center gap-2 rounded-full bg-yellow-400 px-6 py-3 text-sm font-semibold text-void shadow-glow-yellow transition-transform hover:-translate-y-0.5"
             >
               See what's included
               <ArrowRight className="h-4 w-4" />
-            </a>
+            </Link>
           </div>
         </div>
       </Reveal>

@@ -1,6 +1,7 @@
 import { ArrowRight, MousePointerClick, Sparkles } from "lucide-react";
 import dashboardPreview from "../../assets/dashboard-preview.webp";
 import { CHEAPEST_USD, SERVICE_COUNT } from "../../data/services";
+import { Link } from "react-router-dom";
 
 export function Hero() {
   return (
@@ -31,26 +32,26 @@ export function Hero() {
         </p>
 
         <div className="animate-fade-up mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-          <a
-            href="/signup.html"
+          <Link
+            to="/signup"
             className="group inline-flex items-center gap-2 rounded-full bg-yellow-400 px-7 py-3.5 text-base font-semibold text-void shadow-glow-yellow transition-transform hover:-translate-y-0.5 active:translate-y-0"
           >
             Start your business
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          </a>
+          </Link>
           <a
             href="#services"
             className="inline-flex items-center gap-2 rounded-full border-2 border-border px-7 py-3.5 text-base font-semibold text-fg transition-colors hover:border-yellow-400/60"
           >
             See all {SERVICE_COUNT} services
           </a>
-          <a
-            href="/forge.html"
+          <Link
+            to="/forge"
             className="inline-flex items-center gap-2 rounded-full border-2 border-border px-7 py-3.5 text-base font-semibold text-fg transition-colors hover:border-yellow-400/60"
           >
             <Sparkles className="h-4 w-4 text-yellow-400" />
             Talk to Forge
-          </a>
+          </Link>
         </div>
 
         <p className="animate-fade-up mt-4 text-xs text-fg-faint">
