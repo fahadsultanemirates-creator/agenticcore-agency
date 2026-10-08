@@ -1,4 +1,4 @@
-// Reading BNB Smart Chain, through Etherscan's API rather than our own node.
+// Reading BNB Smart Chain, through plain JSON-RPC against public nodes.
 //
 // Two jobs: list the USDT transfers that arrived at our address, and prove
 // the contract we are watching is actually USDT before we trust a single
@@ -56,18 +56,45 @@ export const MIN_CONFIRMATIONS = 15;
  * the read inherited that API's key handling and its multichain routing,
  * and the first live check failed there -- the explorer answered, it was
  * not refusing the key, and what came back still was not hex.
- *
- * The explorer is still used for the transfer list, because listing every
- * token transfer to an address genuinely needs an indexer. Reading a
- * constant off a contract does not.
  */
 function rpcHosts(): string[] {
+  // Comma-separated, so the owner can put a keyed endpoint first and keep
+  // the public ones as fallbacks. One URL still works.
   const configured = Deno.env.get('BSC_RPC_URL');
-  if (configured) return [configured];
+  if (configured) {
+    const hosts = configured.split(',').map((h) => h.trim()).filter(Boolean);
+    if (hosts.length > 0) return hosts;
+  }
+
+  // SET BSC_RPC_URL. These are a fallback, not a foundation.
+  //
+  // BNB Chain's own documentation says eth_getLogs is DISABLED on the
+  // public mainnet dataseeds -- it is not a rate limit, the method is not
+  // served, and "-32005 limit exceeded" is how they say no. The first
+  // real order died here: three dataseeds, three refusals, and a client
+  // watching a spinner over a payment that was already on-chain.
+  //
+  // So the order matters. The hosts that actually serve eth_getLogs come
+  // first; the dataseeds are kept behind them because they are perfectly
+  // good for the cheap calls (eth_blockNumber, and the two eth_calls that
+  // verify the contract) and cost nothing to try.
+  //
+  // The durable answer is a provider endpoint in BSC_RPC_URL. NodeReal's
+  // MegaNode free tier is a fit -- BSC mainnet, no card, and its
+  // eth_getLogs window is far wider than the 1000 blocks asked for here.
   return [
+    // Serve eth_getLogs.
+    'https://binance.llamarpc.com',
+    'https://bsc.drpc.org',
+    'https://bsc.publicnode.com',
+    // Do not serve eth_getLogs, but answer everything else.
+    'https://bsc-dataseed.bnbchain.org',
+    'https://bsc-dataseed1.bnbchain.org',
+    'https://bsc-dataseed2.bnbchain.org',
     'https://bsc-dataseed.binance.org',
     'https://bsc-dataseed1.defibit.io',
-    'https://bsc-rpc.publicnode.com'
+    'https://bsc-dataseed2.defibit.io',
+    'https://bsc-dataseed1.ninicoin.io'
   ];
 }
 
@@ -162,7 +189,19 @@ export function chainConfigured(): boolean {
  * on Ethereum and Tron and 18 here, and reading it rather than assuming is
  * the difference between matching every payment and matching none.
  */
+let verifiedContract: { decimals: number; symbol: string } | null = null;
+
 export async function verifyContract(): Promise<{ decimals: number; symbol: string }> {
+  // Cached for the life of the function instance.
+  //
+  // symbol() and decimals() are immutable on a deployed contract, so
+  // re-reading them is two RPC calls a minute spent re-confirming
+  // something that cannot have changed -- and those two calls were a
+  // third of the budget that got us rate-limited off every public node.
+  // A cold start still checks, which is what the check is for: never
+  // matching payments against a lookalike token.
+  if (verifiedContract) return verifiedContract;
+
   // eth_call selectors: decimals() and symbol().
   const [decimalsHex, symbolHex] = await Promise.all([
     ethCall(USDT_CONTRACT, '0x313ce567'),
@@ -181,7 +220,8 @@ export async function verifyContract(): Promise<{ decimals: number; symbol: stri
     );
   }
 
-  return { decimals, symbol };
+  verifiedContract = { decimals, symbol };
+  return verifiedContract;
 }
 
 /**
@@ -202,21 +242,6 @@ export function decodeStringResult(hex: string): string {
   for (let i = 0; i < length; i++) out[i] = parseInt(bytes.slice(i * 2, i * 2 + 2), 16);
   return new TextDecoder().decode(out).replace(/\0+$/, '');
 }
-
-/**
- * Transfer events are logs, and logs are a standard RPC read.
- *
- * This went through a block explorer first, on the reasoning that listing
- * every transfer to an address needs an indexer. It does -- for all time.
- * It does not for the last hour, which is all this ever needs: an invoice
- * expires in sixty minutes, so a payment older than that belongs to no
- * open invoice and reading further back only costs time.
- *
- * Narrowing the question that way removes the explorer, its API key, and
- * everything that went with it -- a v2 proxy module that would not serve
- * eth_call, a BscScan host that now answers HTML, and a key whose refusal
- * arrived as HTTP 200.
- */
 
 /** keccak256("Transfer(address,address,uint256)"). */
 const TRANSFER_TOPIC = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
@@ -253,13 +278,17 @@ export const MAX_RANGE_BLOCKS = 1000;
 /**
  * The most chunks one sweep will ask for.
  *
- * A sweep that has fallen a day behind has ~115,000 blocks to cover. Doing
- * that in one invocation would hit the function's time limit and the
- * node's rate limit together and achieve neither. Catching up twelve
- * thousand blocks a minute clears a full day in ten minutes, and every
- * sweep in between still settles whatever it has already found.
+ * Four, not twelve. Twelve was sized for catching up on a long backlog,
+ * and that reasoning was wrong twice over: a free public node will not
+ * serve twelve wide eth_getLogs calls a minute -- it answers
+ * "-32005 limit exceeded" and the sweep gets nothing at all -- and the
+ * backlog it was catching up on could not contain a payment anyway,
+ * because every block in it predated the oldest open invoice. usdt-check
+ * now starts no earlier than that invoice, so the normal gap is the
+ * ~80 blocks BNB mines in a minute: one chunk, with three in hand for a
+ * sweep that was skipped or a node that was slow.
  */
-export const MAX_CHUNKS_PER_SWEEP = 12;
+export const MAX_CHUNKS_PER_SWEEP = 4;
 
 /**
  * The ranges one sweep will ask the node for.
@@ -301,32 +330,6 @@ export async function currentBlock(): Promise<bigint> {
   return BigInt(headHex);
 }
 
-/** The recent USDT transfers into our receiving address. */
-export async function recentTransfers(): Promise<Transfer[]> {
-  const headHex = await rpc('eth_blockNumber', []);
-  if (typeof headHex !== 'string') throw new Error(`eth_blockNumber returned ${JSON.stringify(headHex)}`);
-  const head = BigInt(headHex);
-  const from = head > BigInt(LOOKBACK_BLOCKS) ? head - BigInt(LOOKBACK_BLOCKS) : 0n;
-
-  const logs = await rpc('eth_getLogs', [
-    {
-      address: USDT_CONTRACT,
-      fromBlock: '0x' + from.toString(16),
-      toBlock: 'latest',
-      // [event, from (any), to (us)]. Filtering on the recipient at the
-      // node means it returns our transfers rather than every USDT
-      // movement on the chain.
-      topics: [TRANSFER_TOPIC, null, addressTopic(RECEIVING_ADDRESS)]
-    }
-  ]);
-
-  if (!Array.isArray(logs)) throw new Error(`eth_getLogs returned ${JSON.stringify(logs).slice(0, 200)}`);
-
-  return logs
-    .map((raw) => toLogTransfer(raw as Record<string, unknown>, head))
-    .filter((t): t is Transfer => t !== null);
-}
-
 /**
  * Every USDT transfer into our address from `fromBlock` onwards, in order.
  *
@@ -336,9 +339,13 @@ export async function recentTransfers(): Promise<Transfer[]> {
  * whether another pass is owed immediately.
  */
 export async function transfersSince(
-  fromBlock: bigint
+  fromBlock: bigint,
+  knownHead?: bigint
 ): Promise<{ head: bigint; scannedTo: bigint; transfers: Transfer[]; caughtUp: boolean }> {
-  const head = await currentBlock();
+  // The caller usually had to read the head already to work out where to
+  // start. Reading it again is a wasted call against a rate limit that
+  // has already bitten once.
+  const head = knownHead ?? (await currentBlock());
   const ranges = chunkRanges(fromBlock, head);
 
   if (ranges.length === 0) {
@@ -378,6 +385,47 @@ export async function transfersSince(
 /** Where a sweep starts when nothing has ever been scanned. */
 export function coldStartBlock(head: bigint): bigint {
   return head > BigInt(LOOKBACK_BLOCKS) ? head - BigInt(LOOKBACK_BLOCKS) : 0n;
+}
+
+/**
+ * Which block a sweep should start from.
+ *
+ * Three inputs, and the interesting one is the floor. A sweep must never
+ * look earlier than the oldest invoice still waiting for money, because
+ * every invoice is bounded by its own from_block -- so a transfer mined
+ * before the oldest open one cannot settle anything, whatever it is.
+ *
+ * This is pure because getting it wrong is expensive in both directions.
+ * Too low and the sweep burns its whole rate-limit budget on blocks that
+ * cannot contain a payment, which is exactly what stalled the first real
+ * order: the cursor only advances while an invoice is open, so a quiet
+ * afternoon left it 19,010 blocks behind, and the catch-up was refused by
+ * every free node it asked. Too high and it steps over the block a
+ * payment is actually in, and the client is told they did not pay.
+ */
+export function scanStart(opts: {
+  /** The last block already scanned, or null on a cold start. */
+  lastBlock: bigint | null;
+  /** Opening height of the oldest unpaid invoice, or null if none is open. */
+  oldestPendingBlock: bigint | null;
+  head: bigint;
+}): bigint {
+  // Cold start: nothing is recorded, so the only thing that bounds us is
+  // what we still care about. That is the oldest unpaid invoice, however
+  // far back it is -- an invoice is payable for 24 hours, so it can
+  // easily sit outside the lookback window, and starting at the window
+  // instead would step straight over the blocks its payment is in. The
+  // lookback is only the fallback for having no invoice to aim at.
+  if (opts.lastBlock === null) {
+    return opts.oldestPendingBlock ?? coldStartBlock(opts.head);
+  }
+
+  // Warm: everything up to lastBlock is already recorded, so there is
+  // never a reason to go back before it -- and never a reason to start
+  // earlier than the oldest invoice still owed money.
+  const afterCursor = opts.lastBlock + 1n;
+  if (opts.oldestPendingBlock === null) return afterCursor;
+  return opts.oldestPendingBlock > afterCursor ? opts.oldestPendingBlock : afterCursor;
 }
 
 /**
