@@ -1,0 +1,16 @@
+# The site was a static directory published from the repo root. It is a
+# Vite build now, so the build command and publish directory have to be
+# stated here -- a repo-level netlify.toml overrides the dashboard
+# settings, which means this file is the one place the two can be kept
+# in step.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Netlify serves a matching file before it consults redirects, so every
+# legacy /*.html page still wins this rule. It only fires for paths with
+# no file behind them -- which is exactly the React router's territory.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
