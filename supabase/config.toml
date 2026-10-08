@@ -16,3 +16,19 @@ verify_jwt = false
 
 [functions.payram-webhook]
 verify_jwt = false
+
+# Paying by USDT on BNB Smart Chain.
+#
+# usdt-check is called by pg_cron through pg_net with the anon key, and by
+# the request page with a real session. Both are let through the platform
+# gate because the single-invoice path resolves and checks the caller
+# itself -- it has to, since it runs as the service role and so bypasses
+# RLS on the invoice row it looks up.
+[functions.usdt-check]
+verify_jwt = false
+
+# Same: the function resolves the caller from the Authorization header and
+# refuses without one, so the platform gate would only duplicate a check
+# the code cannot skip anyway.
+[functions.usdt-invoice]
+verify_jwt = false
