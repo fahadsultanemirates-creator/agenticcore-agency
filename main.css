@@ -90,6 +90,15 @@ img, svg {
   max-width: 100%;
 }
 
+/* The rule above beats the user-agent stylesheet's [hidden] { display:
+   none }, since author styles always win over UA styles regardless of
+   specificity -- so any svg[hidden] anywhere on the site (icon-swap
+   toggles like the Forge FAB's open/close icons) would otherwise stay
+   visibly rendered. This re-asserts it at matching specificity. */
+svg[hidden] {
+  display: none;
+}
+
 :focus-visible {
   outline: 2px solid var(--accent-cyan);
   outline-offset: 3px;
@@ -193,6 +202,19 @@ img, svg {
   }
   .nav-menu-toggle {
     display: block;
+  }
+}
+
+/* Below ~640px there isn't room for the full wordmark plus a row of
+   nav-cta buttons -- collapse to just the icon and whichever nav-cta
+   button is the primary action (the rest are reachable from the page
+   itself, not worth the width here). */
+@media (max-width: 640px) {
+  .nav-logo-text {
+    display: none;
+  }
+  .nav-cta > *:not(.btn-primary) {
+    display: none;
   }
 }
 

@@ -272,14 +272,6 @@
     right: var(--space-sm);
     bottom: var(--space-sm);
   }
-  .chat-widget-toggle-label {
-    display: none;
-  }
-  .chat-widget-toggle {
-    width: 56px;
-    padding: 0;
-    justify-content: center;
-  }
 }
 
 /* ============================================

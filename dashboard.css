@@ -740,12 +740,5 @@
   .forge-fab {
     right: var(--space-sm);
     bottom: var(--space-sm);
-    width: 56px;
-    height: 56px;
-    padding: 0;
-    justify-content: center;
-  }
-  .forge-fab span {
-    display: none;
   }
 }
