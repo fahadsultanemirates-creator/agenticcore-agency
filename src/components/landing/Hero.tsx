@@ -1,4 +1,5 @@
 import { ArrowRight, MousePointerClick, Sparkles } from "lucide-react";
+import dashboardPreview from "../../assets/dashboard-preview.webp";
 import { CHEAPEST_USD, SERVICE_COUNT } from "../../data/services";
 
 export function Hero() {
@@ -55,6 +56,13 @@ export function Hero() {
         <p className="animate-fade-up mt-4 text-xs text-fg-faint">
           Paid in USDT on BNB Smart Chain. One invoice per job — no subscription, no credits.
         </p>
+
+        {/* An illustration, not a screenshot. It makes no claim to be the
+            real dashboard, so it cannot go stale the way a hand-built mock
+            of one does every time the catalogue moves. */}
+        <div className="animate-fade-up mx-auto mt-16 max-w-3xl md:mt-20" style={{ animationDelay: "150ms" }}>
+          <img src={dashboardPreview} alt="" aria-hidden width={1100} height={867} className="h-auto w-full" />
+        </div>
       </div>
     </section>
   );
