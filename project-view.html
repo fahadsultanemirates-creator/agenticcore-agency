@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
+<title>Shared project — AgenticCore Agency</title>
+<meta name="description" content="A shared, read-only view of an AgenticCore Agency project.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="main.css">
+<link rel="stylesheet" href="inner.css">
+<link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">
+      <img src="logo-mark.png" alt="AgenticCore" class="nav-logo-img">
+      AgenticCore<span class="brand-suffix">.Agency</span>
+    </a>
+    <div class="nav-links"></div>
+    <div class="nav-cta">
+      <a href="index.html" class="btn btn-primary btn-sm">Home</a>
+    </div>
+  </div>
+</nav>
+
+<header class="inner-hero">
+  <div class="container">
+    <span class="hero-eyebrow"><span class="dot"></span> Shared project</span>
+    <h1 id="projectViewTitle">Loading…</h1>
+    <p class="hero-sub" id="projectViewSub">Fetching this project's status.</p>
+  </div>
+</header>
+
+<section class="deep-section">
+  <div class="container narrow">
+    <div id="projectViewCard" class="project-card" style="display:none;">
+      <div class="project-card-row">
+        <div>
+          <h4 id="projectViewGroup"></h4>
+          <p id="projectViewStarted"></p>
+          <p class="revisions-note" id="projectViewRevisions"></p>
+        </div>
+        <span id="projectViewStatus"></span>
+      </div>
+    </div>
+    <p class="dash-empty" id="projectViewError" style="display:none;">This share link is no longer valid — the project may have been unshared, deleted, or the link was mistyped.</p>
+    <p class="dash-note" style="margin-top:var(--space-lg);">This is a read-only view. To manage this project, request changes, or make a payment, <a href="login.html">log in to the dashboard</a>.</p>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-bottom">
+      <span>© 2026 AgenticCore. All rights reserved.</span>
+      <span>An AgenticCore Company</span>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="supabase-client.js"></script>
+<script src="project-view.js"></script>
+</body>
+</html>

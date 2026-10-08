@@ -40,55 +40,11 @@ function switchTab(name) {
   document.querySelectorAll('.dash-panel').forEach((p) => p.classList.toggle('active', p.id === `panel-${name}`));
 }
 
-// -------- Header: profile, referral link, points, support --------
+// -------- Header: profile, support --------
 function renderHeader(profile) {
   document.getElementById('welcomeHeading').textContent = profile.full_name
     ? `Welcome back, ${profile.full_name.split(' ')[0]}`
     : 'Welcome back';
-
-  const referralUrl = `${window.location.origin}${window.location.pathname.replace('dashboard.html', '')}signup.html?ref=${profile.referral_code}`;
-  document.getElementById('referralLinkInput').value = referralUrl;
-
-  document.getElementById('pointsBalance').textContent = formatMoney(profile.points_balance);
-}
-
-// -------- Referrals tab: level counts, points earned, and names --------
-async function renderReferralsPanel(userId) {
-  const errorEl = document.getElementById('referralTreeError');
-
-  const [{ data: tree, error: treeError }, { data: earned, error: pointsError }] = await Promise.all([
-    supabaseClient.rpc('get_my_referral_tree'),
-    supabaseClient.from('points_transactions').select('amount, referral_tier').eq('user_id', userId).eq('type', 'earned_referral')
-  ]);
-
-  if (treeError || pointsError) {
-    console.error('Failed to load referral tree', treeError || pointsError);
-    if (errorEl) {
-      errorEl.textContent = 'Could not load your referral network right now — try refreshing.';
-      errorEl.style.display = 'block';
-    }
-    return;
-  }
-
-  const pointsByLevel = { 1: 0, 2: 0, 3: 0 };
-  (earned || []).forEach((row) => {
-    if (row.referral_tier) pointsByLevel[row.referral_tier] += Number(row.amount);
-  });
-
-  [1, 2, 3].forEach((level) => {
-    document.getElementById(`refL${level}Points`).textContent = `${formatMoney(pointsByLevel[level])} earned`;
-    const people = (tree || []).filter((row) => row.level === level);
-    document.getElementById(`refL${level}Count`).textContent = String(people.length);
-    const listEl = document.getElementById(`refL${level}List`);
-    const emptyEl = document.getElementById(`refL${level}Empty`);
-    if (people.length) {
-      emptyEl.style.display = 'none';
-      listEl.innerHTML = people.map((p) => `<li>${escapeHtml(p.company_name || p.full_name || 'Unnamed account')}</li>`).join('');
-    } else {
-      emptyEl.style.display = 'block';
-      listEl.innerHTML = '';
-    }
-  });
 }
 
 // -------- Business Pool section --------
@@ -115,21 +71,6 @@ function renderBusinessPoolSection(profile) {
     progressText.textContent = `${formatMoney(spend)} / ${formatMoney(BUSINESS_POOL_THRESHOLD)}`;
   }
 }
-
-document.getElementById('copyReferralBtn').addEventListener('click', async () => {
-  const input = document.getElementById('referralLinkInput');
-  input.select();
-  try {
-    await navigator.clipboard.writeText(input.value);
-    const btn = document.getElementById('copyReferralBtn');
-    const original = btn.textContent;
-    btn.textContent = 'Copied!';
-    setTimeout(() => { btn.textContent = original; }, 1500);
-  } catch (e) {
-    // Clipboard API unavailable (e.g. insecure context) -- the input is
-    // already selected above, so a manual copy still works.
-  }
-});
 
 // -------- My Projects: pending requests + projects --------
 async function renderProjectsPanel(userId) {
@@ -165,6 +106,7 @@ async function renderProjectsPanel(userId) {
     .from('projects')
     .select('*')
     .eq('user_id', userId)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false });
 
   const projectsList = document.getElementById('projectsList');
@@ -172,55 +114,175 @@ async function renderProjectsPanel(userId) {
   projectsList.innerHTML = '';
   if (projects && projects.length) {
     projectsEmpty.style.display = 'none';
+
+    const groups = new Map();
     projects.forEach((p) => {
-      const el = document.createElement('div');
-      el.className = 'project-card';
+      const key = p.project_group || 'Unsorted';
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(p);
+    });
 
-      const row = document.createElement('div');
-      row.className = 'project-card-row';
-      row.innerHTML = `
-        <div>
-          <h4>${p.project_name || 'Untitled project'}</h4>
-          <p>Started ${formatDate(p.created_at)}</p>
-          <p class="revisions-note">${p.revisions_used} / 2 free revisions used</p>
+    groups.forEach((groupProjects, groupName) => {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'project-group';
+      groupEl.innerHTML = `
+        <div class="project-group-header">
+          <h3>${escapeHtml(groupName)}</h3>
+          <span class="project-group-count">${groupProjects.length} project${groupProjects.length === 1 ? '' : 's'}</span>
         </div>
-        ${statusPill(p.status)}
       `;
-      el.appendChild(row);
-
-      if (p.status === 'delivered' || p.status === 'awaiting_review') {
-        const actions = document.createElement('div');
-        actions.className = 'project-actions';
-
-        if (p.revisions_used < 2) {
-          const revisionBtn = document.createElement('button');
-          revisionBtn.type = 'button';
-          revisionBtn.className = 'btn btn-secondary btn-sm';
-          revisionBtn.textContent = 'Request Revision';
-          revisionBtn.addEventListener('click', () => handleRequestRevision(p.id, userId, revisionBtn));
-          actions.appendChild(revisionBtn);
-        } else {
-          const note = document.createElement('p');
-          note.className = 'revisions-note';
-          note.textContent = 'No free revisions remaining — further changes are billed separately.';
-          actions.appendChild(note);
-        }
-
-        const approveBtn = document.createElement('button');
-        approveBtn.type = 'button';
-        approveBtn.className = 'btn btn-primary btn-sm';
-        approveBtn.textContent = 'Approve & Pay Remaining';
-        approveBtn.addEventListener('click', () => handleApproveDelivery(p.id, userId, approveBtn));
-        actions.appendChild(approveBtn);
-
-        el.appendChild(actions);
-      }
-
-      projectsList.appendChild(el);
+      const cardsWrap = document.createElement('div');
+      cardsWrap.className = 'project-group-cards';
+      groupProjects.forEach((p) => cardsWrap.appendChild(buildProjectCard(p, userId)));
+      groupEl.appendChild(cardsWrap);
+      projectsList.appendChild(groupEl);
     });
   } else {
     projectsEmpty.style.display = 'block';
   }
+}
+
+function buildProjectCard(p, userId) {
+  const el = document.createElement('div');
+  el.className = 'project-card';
+
+  const row = document.createElement('div');
+  row.className = 'project-card-row';
+  row.innerHTML = `
+    <div>
+      <h4>${escapeHtml(p.project_name || 'Untitled project')}</h4>
+      <p>Started ${formatDate(p.created_at)}</p>
+      <p class="revisions-note">${p.revisions_used} / 2 free revisions used</p>
+    </div>
+    ${statusPill(p.status)}
+  `;
+  el.appendChild(row);
+
+  if (p.status === 'delivered' || p.status === 'awaiting_review') {
+    const actions = document.createElement('div');
+    actions.className = 'project-actions';
+
+    if (p.revisions_used < 2) {
+      const revisionBtn = document.createElement('button');
+      revisionBtn.type = 'button';
+      revisionBtn.className = 'btn btn-secondary btn-sm';
+      revisionBtn.textContent = 'Request Revision';
+      revisionBtn.addEventListener('click', () => handleRequestRevision(p.id, userId, revisionBtn));
+      actions.appendChild(revisionBtn);
+    } else {
+      const note = document.createElement('p');
+      note.className = 'revisions-note';
+      note.textContent = 'No free revisions remaining — further changes are billed separately.';
+      actions.appendChild(note);
+    }
+
+    const approveBtn = document.createElement('button');
+    approveBtn.type = 'button';
+    approveBtn.className = 'btn btn-primary btn-sm';
+    approveBtn.textContent = 'Approve & Pay Remaining';
+    approveBtn.addEventListener('click', () => handleApproveDelivery(p.id, userId, approveBtn));
+    actions.appendChild(approveBtn);
+
+    el.appendChild(actions);
+  }
+
+  const manageRow = document.createElement('div');
+  manageRow.className = 'project-manage-row';
+
+  const renameBtn = document.createElement('button');
+  renameBtn.type = 'button';
+  renameBtn.className = 'project-manage-btn';
+  renameBtn.title = 'Save / rename';
+  renameBtn.innerHTML = '<span aria-hidden="true">✎</span> Save';
+  renameBtn.addEventListener('click', () => handleRenameProject(p, userId));
+  manageRow.appendChild(renameBtn);
+
+  const moveBtn = document.createElement('button');
+  moveBtn.type = 'button';
+  moveBtn.className = 'project-manage-btn';
+  moveBtn.title = 'Move to a different group';
+  moveBtn.innerHTML = '<span aria-hidden="true">⇄</span> Move';
+  moveBtn.addEventListener('click', () => handleMoveProject(p, userId));
+  manageRow.appendChild(moveBtn);
+
+  const shareBtn = document.createElement('button');
+  shareBtn.type = 'button';
+  shareBtn.className = 'project-manage-btn';
+  shareBtn.title = p.is_shared ? 'Copy the share link' : 'Get a shareable link';
+  shareBtn.innerHTML = `<span aria-hidden="true">🔗</span> ${p.is_shared ? 'Copy link' : 'Share'}`;
+  shareBtn.addEventListener('click', () => handleShareProject(p, userId, shareBtn));
+  manageRow.appendChild(shareBtn);
+
+  if (p.is_shared) {
+    const unshareBtn = document.createElement('button');
+    unshareBtn.type = 'button';
+    unshareBtn.className = 'project-manage-btn';
+    unshareBtn.title = 'Turn off the share link';
+    unshareBtn.innerHTML = '<span aria-hidden="true">🚫</span> Unshare';
+    unshareBtn.addEventListener('click', () => handleUnshareProject(p, userId));
+    manageRow.appendChild(unshareBtn);
+  }
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.type = 'button';
+  deleteBtn.className = 'project-manage-btn project-manage-btn-danger';
+  deleteBtn.title = 'Delete this project';
+  deleteBtn.innerHTML = '<span aria-hidden="true">🗑</span> Delete';
+  deleteBtn.addEventListener('click', () => handleDeleteProject(p, userId));
+  manageRow.appendChild(deleteBtn);
+
+  el.appendChild(manageRow);
+  return el;
+}
+
+async function handleRenameProject(project, userId) {
+  const name = prompt('Name this project:', project.project_name || '');
+  if (name === null) return;
+  const { error } = await supabaseClient.rpc('rename_project', { p_project_id: project.id, p_name: name });
+  if (error) { alert('Could not save: ' + error.message); return; }
+  renderProjectsPanel(userId);
+}
+
+async function handleMoveProject(project, userId) {
+  const group = prompt('Move to which group? (leave blank to go back to Unsorted)', project.project_group || '');
+  if (group === null) return;
+  const { error } = await supabaseClient.rpc('move_project_group', { p_project_id: project.id, p_group: group });
+  if (error) { alert('Could not move: ' + error.message); return; }
+  renderProjectsPanel(userId);
+}
+
+async function handleShareProject(project, userId, btn) {
+  let shareToken = project.share_token;
+  if (!project.is_shared) {
+    const { data, error } = await supabaseClient.rpc('set_project_shared', { p_project_id: project.id, p_shared: true });
+    if (error) { alert('Could not enable sharing: ' + error.message); return; }
+    shareToken = data.share_token;
+  }
+
+  const link = `${window.location.origin}${window.location.pathname.replace('dashboard.html', '')}project-view.html?token=${shareToken}`;
+  try {
+    await navigator.clipboard.writeText(link);
+    const original = btn.innerHTML;
+    btn.innerHTML = '<span aria-hidden="true">✓</span> Copied!';
+    setTimeout(() => { btn.innerHTML = original; }, 1500);
+  } catch (e) {
+    prompt('Copy this link:', link);
+  }
+  renderProjectsPanel(userId);
+}
+
+async function handleUnshareProject(project, userId) {
+  if (!confirm('Stop sharing this project? The old link will stop working.')) return;
+  const { error } = await supabaseClient.rpc('set_project_shared', { p_project_id: project.id, p_shared: false });
+  if (error) { alert('Could not disable sharing: ' + error.message); return; }
+  renderProjectsPanel(userId);
+}
+
+async function handleDeleteProject(project, userId) {
+  if (!confirm(`Delete "${project.project_name || 'Untitled project'}"? This can't be undone from here.`)) return;
+  const { error } = await supabaseClient.rpc('soft_delete_project', { p_project_id: project.id });
+  if (error) { alert('Could not delete: ' + error.message); return; }
+  renderProjectsPanel(userId);
 }
 
 async function handleRequestRevision(projectId, userId, btn) {
@@ -281,7 +343,6 @@ async function renderBillingPanel(userId) {
       el.innerHTML = `
         <div>
           <h4>${formatMoney(b.amount)} — ${b.payment_type}</h4>
-          <p>${b.points_used > 0 ? formatMoney(b.points_used) + ' in Points applied' : 'No Points applied'}</p>
         </div>
         ${statusPill(b.status)}
       `;
@@ -383,12 +444,6 @@ function renderPaymentCTA(container, { requestId, amountDue }) {
 // flow (same steps, discounted price + a note on the order).
 function initCatalogWizard(cfg) {
   const el = (id) => document.getElementById(id);
-  const pointsRow = cfg.pointsRowId ? el(cfg.pointsRowId) : null;
-  const pointsNote = cfg.pointsNoteId ? el(cfg.pointsNoteId) : null;
-  if (pointsRow && Number(cfg.profile.points_balance) > 0) {
-    pointsRow.style.display = 'block';
-    pointsNote.textContent = `You have ${formatMoney(cfg.profile.points_balance)} in Points. Check this box and we'll apply up to that amount when your price is finalized.`;
-  }
 
   const state = { category: null, taskType: null };
   let currentStep = 1;
@@ -495,16 +550,12 @@ function initCatalogWizard(cfg) {
 
     const item = getCatalogItem(state.category, state.taskType);
     let description = el(cfg.descriptionId).value.trim();
-    const applyPoints = cfg.applyPointsToggleId ? el(cfg.applyPointsToggleId).checked : false;
     const attachmentInput = el(cfg.attachmentId);
     const attachmentStatus = el(cfg.attachmentStatusId);
     const file = attachmentInput.files[0];
 
     if (cfg.discountNote) {
       description += `\n\n[${cfg.discountNote}]`;
-    }
-    if (applyPoints) {
-      description += `\n\n[Requested: apply up to ${formatMoney(cfg.profile.points_balance)} in Points toward this project.]`;
     }
 
     const btn = el(cfg.submitBtnId);
@@ -564,7 +615,6 @@ function initCatalogWizard(cfg) {
     state.taskType = null;
     el(cfg.descriptionId).value = '';
     attachmentInput.value = '';
-    if (cfg.applyPointsToggleId) el(cfg.applyPointsToggleId).checked = false;
     renderServiceOptions();
     goToStep(1);
 
@@ -710,9 +760,6 @@ function initNewRequestWizard(profile) {
     descriptionId: 'reqDescription',
     attachmentId: 'reqAttachment',
     attachmentStatusId: 'attachmentStatus',
-    pointsRowId: 'pointsToggleRow',
-    pointsNoteId: 'pointsToggleNote',
-    applyPointsToggleId: 'applyPointsToggle',
     summaryId: 'wizardSummary',
     backBtnId: 'wizardBackBtn',
     nextBtnId: 'wizardNextBtn',
@@ -969,7 +1016,17 @@ function initForgeFab() {
   initPackagesPanel(profile);
   renderProjectsPanel(userId);
   renderBillingPanel(userId);
-  renderReferralsPanel(userId);
+
+  document.getElementById('newProjectBtn').addEventListener('click', () => {
+    switchTab('new-request');
+    setNewRequestMode('forge');
+  });
+
+  document.getElementById('quickForgeBtn').addEventListener('click', () => {
+    switchTab('new-request');
+    setNewRequestMode('forge');
+    document.getElementById('forgeChatInput').focus();
+  });
 
   document.getElementById('logoutBtn').addEventListener('click', logOut);
 })();

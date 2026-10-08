@@ -1,5 +1,5 @@
 /* ============================================
-   Dashboard header: welcome + referral/points/support cards
+   Dashboard header: welcome + quick-order/Telegram/support cards
    ============================================ */
 
 .dash-header {
@@ -40,30 +40,6 @@
   color: var(--text-secondary);
   font-size: 0.85rem;
   margin-top: var(--space-sm);
-}
-
-.referral-link-row {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.referral-link-row input {
-  flex: 1;
-  min-width: 0;
-  padding: 0.6rem 0.75rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-}
-
-.points-balance {
-  font-family: var(--font-display);
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--accent-cyan);
 }
 
 /* ============================================
@@ -217,59 +193,86 @@
   gap: 0.75rem;
 }
 
-/* ============================================
-   Referrals tab
-   ============================================ */
-
-.referral-level-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.projects-page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
   gap: var(--space-md);
-  margin-top: var(--space-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-xl);
 }
 
-.referral-level-card {
-  background: linear-gradient(160deg, var(--bg-panel-hover), var(--bg-primary));
+.projects-page-head h1 {
+  font-size: clamp(1.6rem, 3vw, 2.1rem);
+  margin-bottom: 0.3rem;
+}
+
+.projects-page-head p {
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.project-group {
+  margin-bottom: var(--space-lg);
+}
+
+.project-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
+}
+
+.project-group-header h3 {
+  font-size: 1rem;
+}
+
+.project-group-count {
+  color: var(--text-tertiary);
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+}
+
+.project-group-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.project-manage-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: var(--space-sm);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.project-manage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: var(--space-md);
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
 }
 
-.referral-level-count {
-  font-family: var(--font-display);
-  font-size: 1.7rem;
-  font-weight: 700;
+.project-manage-btn:hover {
+  border-color: var(--accent-cyan);
   color: var(--text-primary);
 }
 
-.referral-level-points {
-  color: var(--accent-cyan);
-  font-size: 0.85rem;
-  margin-top: 0.2rem;
-}
-
-.referral-name-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.referral-name-list li {
-  background: var(--bg-panel);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 0.6rem var(--space-md);
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-@media (max-width: 700px) {
-  .referral-level-grid {
-    grid-template-columns: 1fr;
-  }
+.project-manage-btn-danger:hover {
+  border-color: #F87171;
+  color: #F87171;
 }
 
 .request-card, .project-card, .billing-row {
@@ -514,27 +517,6 @@
 
 .dash-panel textarea {
   resize: vertical;
-}
-
-.points-toggle-row {
-  background: rgba(255, 30, 158, 0.05);
-  border: 1px solid rgba(255, 30, 158, 0.2);
-  border-radius: var(--radius-sm);
-  padding: var(--space-sm) var(--space-md);
-}
-
-.points-toggle-label {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  color: var(--text-primary);
-  font-size: 0.92rem;
-  cursor: pointer;
-  margin-bottom: 0 !important;
-}
-
-.points-toggle-label input {
-  width: auto !important;
 }
 
 .dash-note {

@@ -36,17 +36,14 @@
     <h1 id="welcomeHeading">Welcome back</h1>
     <div class="dash-top-grid">
       <div class="dash-card">
-        <span class="panel-tag">Your referral link</span>
-        <div class="referral-link-row">
-          <input type="text" id="referralLinkInput" readonly aria-label="Your referral link">
-          <button type="button" class="btn btn-secondary btn-sm" id="copyReferralBtn">Copy</button>
-        </div>
-        <p class="dash-card-note">Earn 20% in Points on everyone you refer directly, on their first 3 paid projects.</p>
+        <span class="panel-tag">Order with Forge</span>
+        <p class="dash-card-note">Describe what you need and get a scoped price — no forms to fill out.</p>
+        <button type="button" class="btn btn-secondary btn-sm" id="quickForgeBtn">Chat with Forge</button>
       </div>
       <div class="dash-card">
-        <span class="panel-tag">AgenticCore Points</span>
-        <div class="points-balance" id="pointsBalance">—</div>
-        <p class="dash-card-note">1 Point = $1 of credit toward any service.</p>
+        <span class="panel-tag">Telegram</span>
+        <p class="dash-card-note">Create an account, order services, and track delivery — all from Telegram too.</p>
+        <a href="https://t.me/AgenticCoreAgency" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Open Telegram</a>
       </div>
       <div class="dash-card" id="supportCard">
         <span class="panel-tag">Support</span>
@@ -86,12 +83,19 @@
       <button type="button" class="dash-tab" data-tab="new-request">New Request</button>
       <button type="button" class="dash-tab" data-tab="packages">Packages</button>
       <button type="button" class="dash-tab" data-tab="billing">Billing</button>
-      <button type="button" class="dash-tab" data-tab="referrals">Referrals</button>
     </div>
 
     <div class="dash-panels">
 
       <div class="dash-panel active" id="panel-projects">
+        <div class="projects-page-head">
+          <div>
+            <h1>Your projects</h1>
+            <p>Every order you've placed, kept with the work it belongs to.</p>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="newProjectBtn">+ New project</button>
+        </div>
+
         <h2>Pending requests</h2>
         <p class="dash-empty" id="requestsEmpty">You don't have any pending requests.</p>
         <div class="request-list" id="requestsList"></div>
@@ -148,13 +152,6 @@
               <label for="reqAttachment">Attach a file <span style="color:var(--text-tertiary);font-weight:400;">(optional — reference images, briefs, existing branding, etc.)</span></label>
               <input type="file" id="reqAttachment" accept="image/*,.pdf,.doc,.docx">
               <p class="dash-card-note" id="attachmentStatus"></p>
-            </div>
-            <div class="field-group points-toggle-row" id="pointsToggleRow" style="display:none;">
-              <label class="points-toggle-label">
-                <input type="checkbox" id="applyPointsToggle">
-                Apply my AgenticCore Points to this request
-              </label>
-              <p class="dash-card-note" id="pointsToggleNote"></p>
             </div>
           </div>
 
@@ -272,43 +269,6 @@
         <div class="dash-note">Billing follows 30% upfront, 70% on completion, for every service and package. <a href="terms.html">Read the full payment &amp; delivery policy →</a></div>
         <p class="dash-empty" id="billingEmpty">No billing activity yet.</p>
         <div class="billing-list" id="billingList"></div>
-      </div>
-
-      <div class="dash-panel" id="panel-referrals">
-        <h2>Your referral network</h2>
-        <div class="dash-note">Three levels deep — you earn Points when the people you refer, and the people they refer, get paid work completed.</div>
-
-        <div class="referral-level-grid" id="referralLevelGrid">
-          <div class="referral-level-card">
-            <span class="panel-tag">Level 1 — direct</span>
-            <div class="referral-level-count" id="refL1Count">0</div>
-            <div class="referral-level-points" id="refL1Points">$0.00 earned</div>
-          </div>
-          <div class="referral-level-card">
-            <span class="panel-tag">Level 2</span>
-            <div class="referral-level-count" id="refL2Count">0</div>
-            <div class="referral-level-points" id="refL2Points">$0.00 earned</div>
-          </div>
-          <div class="referral-level-card">
-            <span class="panel-tag">Level 3</span>
-            <div class="referral-level-count" id="refL3Count">0</div>
-            <div class="referral-level-points" id="refL3Points">$0.00 earned</div>
-          </div>
-        </div>
-
-        <h3 style="margin-top:var(--space-xl);">Level 1 — people you referred directly</h3>
-        <p class="dash-empty" id="refL1Empty">No one yet — share your link from the header above.</p>
-        <ul class="referral-name-list" id="refL1List"></ul>
-
-        <h3 style="margin-top:var(--space-lg);">Level 2</h3>
-        <p class="dash-empty" id="refL2Empty">No one at this level yet.</p>
-        <ul class="referral-name-list" id="refL2List"></ul>
-
-        <h3 style="margin-top:var(--space-lg);">Level 3</h3>
-        <p class="dash-empty" id="refL3Empty">No one at this level yet.</p>
-        <ul class="referral-name-list" id="refL3List"></ul>
-
-        <p class="dash-error" id="referralTreeError" style="display:none;"></p>
       </div>
 
     </div>
