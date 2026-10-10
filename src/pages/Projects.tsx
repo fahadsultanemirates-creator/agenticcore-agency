@@ -235,7 +235,16 @@ function ProjectCard({
     <div className="rounded-xl border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-semibold text-fg">{p.project_name || "Untitled project"}</p>
+          {/* The card carries its own buttons -- revision, approve,
+              rename, share -- so the whole card cannot be a link without
+              nesting interactive elements inside one. The title is the
+              link instead. */}
+          <Link
+            to={`/projects/${p.id}`}
+            className="block truncate font-semibold text-fg transition-colors hover:text-cyan-400"
+          >
+            {p.project_name || "Untitled project"}
+          </Link>
           <p className="text-xs text-fg-faint">Started {shortDate(p.created_at)}</p>
           <p className="mt-0.5 text-xs text-fg-faint">
             {p.revisions_used} / {FREE_REVISIONS} free revisions used

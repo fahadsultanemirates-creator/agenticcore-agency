@@ -18,6 +18,9 @@ const ResetPassword = lazy(() => import("./pages/ResetPassword").then((m) => ({ 
 const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.Dashboard })));
 const Request = lazy(() => import("./pages/Request").then((m) => ({ default: m.Request })));
 const Projects = lazy(() => import("./pages/Projects").then((m) => ({ default: m.Projects })));
+const ProjectDetail = lazy(() =>
+  import("./pages/ProjectDetail").then((m) => ({ default: m.ProjectDetail })),
+);
 const Orders = lazy(() => import("./pages/Orders").then((m) => ({ default: m.Orders })));
 const Invoices = lazy(() => import("./pages/Invoices").then((m) => ({ default: m.Invoices })));
 const Messages = lazy(() => import("./pages/Messages").then((m) => ({ default: m.Messages })));
@@ -96,6 +99,7 @@ export default function App() {
               </RequireAuth>
             }
           />
+          <Route path="/projects/:id" element={<RequireAuth><ProjectDetail /></RequireAuth>} />
           <Route path="/orders" element={<RequireAuth><Orders /></RequireAuth>} />
           <Route path="/invoices" element={<RequireAuth><Invoices /></RequireAuth>} />
           <Route path="/messages" element={<RequireAuth><Messages /></RequireAuth>} />
