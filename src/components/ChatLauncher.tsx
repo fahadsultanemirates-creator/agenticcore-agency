@@ -4,31 +4,29 @@ import { Link } from "react-router-dom";
 /**
  * The floating way into Forge, on every public page.
  *
- * Icon-only below `sm`, labelled above. The labelled pill is about 150px
- * wide, and the mobile screenshots showed it parked across service card
- * prices and their tap targets -- on a phone that is a third of the
- * screen sitting on the one number a visitor came to read. A 48px circle
- * still clears Apple's and Google's minimum touch target while covering
- * about a quarter of the area.
+ * Matches .click's: a labelled pill at every width, 56px tall, with the
+ * pulse ring. The owner compared the two and wants this one, so the
+ * earlier icon-only-on-mobile version is gone.
  *
- * `bottom-[max(1rem,env(safe-area-inset-bottom))]` keeps it clear of the
- * home indicator and any browser chrome pinned to the bottom of the
- * viewport on iOS.
+ * The one thing kept from that version is
+ * `bottom-[max(1.25rem,env(safe-area-inset-bottom))]`, which costs
+ * nothing visually and keeps the pill clear of the iOS home indicator
+ * and any browser chrome pinned to the bottom of the viewport.
  *
- * Pages that scroll also need to end clear of it, which is why the public
- * shell and the dashboard both carry bottom padding greater than this
- * button's height plus its offset. A launcher that hides the last row of
- * a list is a launcher that loses the last item.
+ * It does sit over page content while scrolling -- that is what a fixed
+ * launcher does, and .click has always behaved this way. Pages that
+ * scroll carry bottom padding greater than this pill's height plus its
+ * offset so the LAST row of a list is never the thing underneath it.
  */
 export function ChatLauncher() {
   return (
     <Link
       to="/forge"
       aria-label="Chat with Forge"
-      className="fixed right-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-40 flex h-12 w-12 items-center justify-center rounded-full bg-cyan-400 text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5 sm:right-6 sm:bottom-6 sm:h-auto sm:w-auto sm:gap-2 sm:px-5 sm:py-3 sm:text-sm sm:font-semibold"
+      className="animate-pulse-ring fixed right-5 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-50 flex h-14 items-center gap-2 rounded-full bg-cyan-400 px-5 font-semibold text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 sm:right-8 sm:bottom-8"
     >
-      <Sparkles className="h-5 w-5 sm:h-4 sm:w-4" />
-      <span className="hidden sm:inline">Chat with Forge</span>
+      <Sparkles className="h-4 w-4 shrink-0" />
+      Chat with Forge
     </Link>
   );
 }

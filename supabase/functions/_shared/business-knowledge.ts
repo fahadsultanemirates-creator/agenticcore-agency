@@ -18,7 +18,18 @@ function renderPricingTable(): string {
     const lines = cat.items
       .map((item) => {
         const scope = item.startingFrom ? " (starting price — scope decides the final figure)" : "";
-        return `  - ${item.id} ${item.name}: ${item.price}${scope}\n      ${item.summary}\n      Delivery ${item.delivery}. ${item.revisions === 0 ? "No revision round" : `${item.revisions} revision round`}.`;
+        // Exclusions and external costs were in the generated data and
+        // rendered nowhere, so they were shipped to the edge on every
+        // deploy and the model never saw them. They are the two things
+        // that stop it over-promising, which is the whole reason the
+        // catalogue records them.
+        return [
+          `  - ${item.id} ${item.name}: ${item.price}${scope}`,
+          `      ${item.summary}`,
+          `      Delivery ${item.delivery}. ${item.revisions === 0 ? "No revision round" : `${item.revisions} revision round`}.`,
+          `      NOT included: ${item.excludes.join("; ")}.`,
+          `      Customer also pays directly for: ${item.externalCosts.join(", ")}.`,
+        ].join("\n");
       })
       .join("\n");
     return `${cat.category}:\n${lines}`;
