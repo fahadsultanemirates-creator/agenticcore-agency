@@ -34,6 +34,7 @@ const ServiceDetail = lazy(() =>
 const Packages = lazy(() => import("./pages/Packages").then((m) => ({ default: m.Packages })));
 const Terms = lazy(() => import("./pages/legal/Terms").then((m) => ({ default: m.Terms })));
 const Privacy = lazy(() => import("./pages/legal/Privacy").then((m) => ({ default: m.Privacy })));
+const Contact = lazy(() => import("./pages/Contact").then((m) => ({ default: m.Contact })));
 
 /**
  * Every page a client touches is now a React route.
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/packages" element={<Packages />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/contact" element={<Contact />} />
 
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

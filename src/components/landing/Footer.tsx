@@ -16,6 +16,7 @@ const SOCIALS: { href: string; label: string; icon: ComponentType<{ className?: 
 ];
 
 const LEGAL = [
+  { href: "/contact", label: "Contact" },
   { href: "/terms", label: "Terms" },
   { href: "/privacy", label: "Privacy" },
 ];
