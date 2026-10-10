@@ -83,14 +83,11 @@ export default function App() {
               </RequireAuth>
             }
           />
-          <Route
-            path="/request"
-            element={
-              <RequireAuth>
-                <Request />
-              </RequireAuth>
-            }
-          />
+          {/* Public on purpose. This is where "Start Your Project" lands and
+              where paid traffic arrives; gating it meant a cold visitor met a
+              login form before seeing anything they could buy. Sign-up now
+              happens at submit, and the brief survives the detour. */}
+          <Route path="/request" element={<Request />} />
           <Route
             path="/projects"
             element={
