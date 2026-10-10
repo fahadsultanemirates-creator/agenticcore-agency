@@ -53,15 +53,34 @@ export function Hero() {
           agents from <span className="font-semibold text-fg">$149</span>.
         </p>
 
-        {/* An illustration, not a screenshot. It makes no claim to be the
-            real dashboard, so it cannot go stale the way a hand-built mock
-            of one does every time the catalogue moves. */}
-        <div
-          className="animate-fade-up mx-auto mt-14 max-w-3xl md:mt-20"
+        {/* The owner's cyan dashboard artwork. Wider than the old square
+            illustration, so it gets max-w-5xl and breaks out of the
+            text column.
+
+            It is captioned as an illustration on purpose. The figures
+            inside it -- agent counts, hours saved, a success rate -- are
+            composed for the picture, and the brief is explicit that
+            Agency does not invent customer results. Shown without that
+            line, a visitor reads them as ours. */}
+        <figure
+          className="animate-fade-up mx-auto mt-14 max-w-5xl md:mt-20"
           style={{ animationDelay: "150ms" }}
         >
-          <img src={dashboardPreview} alt="" aria-hidden width={1100} height={867} className="h-auto w-full" />
-        </div>
+          <img
+            src={dashboardPreview}
+            alt="The AgenticCore.agency project dashboard: AI agents, automation flows, projects and analytics."
+            width={1800}
+            height={1013}
+            // Above the fold on a desktop, so it should not wait for a
+            // lazy-load pass to start fetching.
+            fetchPriority="high"
+            className="h-auto w-full rounded-xl"
+          />
+          <figcaption className="mt-3 text-xs text-fg-faint">
+            Illustration of the project dashboard. Figures shown are for the example, not
+            customer results.
+          </figcaption>
+        </figure>
       </div>
     </section>
   );

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { DashboardNav } from "../components/dashboard/DashboardNav";
 import { DashboardShell } from "../components/dashboard/DashboardShell";
 import { useAuth } from "../context/AuthContext";
 import { taskTypeLabel } from "../lib/pricing";
@@ -104,6 +105,7 @@ export function Projects() {
 
   return (
     <DashboardShell title="Your projects">
+      <DashboardNav />
       <section className="py-10">
         <h1 className="font-display text-2xl font-semibold text-fg sm:text-3xl">Your projects</h1>
         <p className="mt-2 text-sm text-fg-muted">
@@ -233,7 +235,16 @@ function ProjectCard({
     <div className="rounded-xl border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-semibold text-fg">{p.project_name || "Untitled project"}</p>
+          {/* The card carries its own buttons -- revision, approve,
+              rename, share -- so the whole card cannot be a link without
+              nesting interactive elements inside one. The title is the
+              link instead. */}
+          <Link
+            to={`/projects/${p.id}`}
+            className="block truncate font-semibold text-fg transition-colors hover:text-cyan-400"
+          >
+            {p.project_name || "Untitled project"}
+          </Link>
           <p className="text-xs text-fg-faint">Started {shortDate(p.created_at)}</p>
           <p className="mt-0.5 text-xs text-fg-faint">
             {p.revisions_used} / {FREE_REVISIONS} free revisions used
