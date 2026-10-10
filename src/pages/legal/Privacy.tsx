@@ -47,6 +47,11 @@ export function Privacy() {
           to AgenticCore.click or AgenticCore.biz we will say so and give you the link; taking it
           there is your decision, and you carry the details across yourself.
         </p>
+        <p>
+          And nothing on this page loads from anywhere else — the fonts and every other asset are
+          served from our own domain, so simply opening the site does not announce your visit to a
+          third party.
+        </p>
       </Clause>
 
       <Clause heading="How long we keep it">
