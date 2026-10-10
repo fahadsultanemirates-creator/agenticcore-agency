@@ -11,6 +11,10 @@
 // A comment is not a mechanism. This is: the file is regenerated on every
 // build, so Forge quotes the same catalogue the site sells, and a price
 // changed in one place cannot be stale in the other.
+//
+// The data is emitted on one line rather than pretty-printed. Nobody
+// reads this file -- it says DO NOT EDIT at the top -- and every byte
+// ships to the edge inside three separate function bundles.
 
 import { writeFileSync } from "node:fs";
 import {
@@ -82,9 +86,9 @@ export interface BotPackage {
   externalCosts: string[];
 }
 
-export const BOT_CATALOG: BotCatalogCategory[] = ${JSON.stringify(grouped, null, 2)};
+export const BOT_CATALOG: BotCatalogCategory[] = ${JSON.stringify(grouped)};
 
-export const BOT_PACKAGES: BotPackage[] = ${JSON.stringify(bundles, null, 2)};
+export const BOT_PACKAGES: BotPackage[] = ${JSON.stringify(bundles)};
 
 export const BOT_SERVICE_COUNT = ${activeServices.length};
 `;
