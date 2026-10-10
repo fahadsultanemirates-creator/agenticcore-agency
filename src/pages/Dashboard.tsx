@@ -1,7 +1,9 @@
 import { ArrowRight, FolderKanban, Send, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { DashboardNav } from "../components/dashboard/DashboardNav";
 import { DashboardShell } from "../components/dashboard/DashboardShell";
+import { useMessages } from "../lib/dashboardData";
 import { capabilities, formatPrice, packages, SERVICE_COUNT } from "../data/catalog";
 import { useAuth } from "../context/AuthContext";
 import { money } from "../lib/format";
@@ -11,6 +13,11 @@ import { statusClass, statusLabel } from "../lib/status";
 type BillingRow = { id: number; amount: number; payment_type: string; status: string };
 
 export function Dashboard() {
+  const messages = useMessages();
+  // Only the other side's unread messages. Counting your own would mean
+  // the badge lit up the moment you sent something.
+  const unread = messages.rows.filter((m) => m.author !== "client" && !m.read_at).length;
+
   const { user } = useAuth();
   const [billing, setBilling] = useState<BillingRow[] | null>(null);
 
@@ -51,6 +58,7 @@ export function Dashboard() {
 
   return (
     <DashboardShell title="Dashboard">
+      <DashboardNav unreadMessages={unread} />
       <section className="pt-8 pb-10 sm:pt-12">
         <h1 className="font-display text-3xl font-semibold text-fg sm:text-4xl">
           Welcome back, {firstName}

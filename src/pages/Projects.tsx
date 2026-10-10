@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { DashboardNav } from "../components/dashboard/DashboardNav";
 import { DashboardShell } from "../components/dashboard/DashboardShell";
 import { useAuth } from "../context/AuthContext";
 import { taskTypeLabel } from "../lib/pricing";
@@ -104,6 +105,7 @@ export function Projects() {
 
   return (
     <DashboardShell title="Your projects">
+      <DashboardNav />
       <section className="py-10">
         <h1 className="font-display text-2xl font-semibold text-fg sm:text-3xl">Your projects</h1>
         <p className="mt-2 text-sm text-fg-muted">

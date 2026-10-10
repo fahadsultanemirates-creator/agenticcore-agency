@@ -2,6 +2,7 @@ import { ArrowLeft, Loader2, Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Logo } from "../components/Logo";
+import { ProjectDraftForm } from "../components/forge/ProjectDraftForm";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 
@@ -57,6 +58,10 @@ export function Forge() {
   const [error, setError] = useState("");
   const [needsHuman, setNeedsHuman] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  // The manual path. Opens on request, and opens itself when the model
+  // fails -- the brief is explicit that an AI outage must not be the
+  // only way to start a project.
+  const [showDraftForm, setShowDraftForm] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -124,6 +129,10 @@ export function Forge() {
       if (handoff) setNeedsHuman(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      // Forge is down, so offer the path that does not need it rather
+      // than leaving the visitor at a dead end with their requirement
+      // half-typed.
+      setShowDraftForm(true);
     } finally {
       setSending(false);
       inputRef.current?.focus();
@@ -192,7 +201,7 @@ export function Forge() {
             </a>
           )}
 
-          {error && <p className="self-start text-sm text-orange-300">{error}</p>}
+          {error && <p className="self-start text-sm text-cyan-300">{error}</p>}
 
           {showSuggestions && (
             <div className="mt-2 flex flex-wrap gap-2">
@@ -207,6 +216,30 @@ export function Forge() {
                 </button>
               ))}
             </div>
+          )}
+
+          {/* The manual path, and the way a conversation becomes a saved
+              draft. Seeded with what the client has already typed, so
+              switching to it does not throw their words away. */}
+          {showDraftForm ? (
+            <div className="mt-4">
+              <ProjectDraftForm
+                initialDescription={messages
+                  .filter((m) => m.role === "user")
+                  .map((m) => m.content)
+                  .join("\n\n")}
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowDraftForm(true)}
+              className="mt-2 self-start text-sm font-semibold text-cyan-400 hover:underline"
+            >
+              {messages.some((m) => m.role === "user")
+                ? "Save this as a project draft instead →"
+                : "Prefer a form? Describe your project without AI →"}
+            </button>
           )}
         </div>
       </div>
