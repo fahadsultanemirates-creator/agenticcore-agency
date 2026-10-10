@@ -45,7 +45,7 @@ export function Login() {
       footer={
         <>
           Don't have an account?{" "}
-          <Link to="/signup" className="font-semibold text-yellow-400 hover:underline">
+          <Link to="/signup" className="font-semibold text-cyan-400 hover:underline">
             Create one
           </Link>
         </>
@@ -69,7 +69,7 @@ export function Login() {
         <label className="flex flex-col gap-1.5">
           <div className="flex items-baseline justify-between gap-3">
             <FieldLabel>Password</FieldLabel>
-            <Link to="/reset" className="text-xs font-semibold text-yellow-400 hover:underline">
+            <Link to="/reset" className="text-xs font-semibold text-cyan-400 hover:underline">
               Forgot?
             </Link>
           </div>
@@ -82,7 +82,7 @@ export function Login() {
           />
         </label>
 
-        {error && <p className="text-sm text-yellow-400">{error}</p>}
+        {error && <p className="text-sm text-cyan-400">{error}</p>}
 
         <SubmitButton pending={submitting}>
           {submitting ? "Logging in…" : "Log in"}

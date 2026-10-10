@@ -64,9 +64,9 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
           // refusal costs the shortcut, not the payment.
         }
       }}
-      className="flex shrink-0 items-center gap-1.5 rounded-full border-2 border-border px-3 py-1.5 text-xs font-semibold text-fg-muted transition-colors hover:border-yellow-400/50 hover:text-fg"
+      className="flex shrink-0 items-center gap-1.5 rounded-full border-2 border-border px-3 py-1.5 text-xs font-semibold text-fg-muted transition-colors hover:border-cyan-400/50 hover:text-fg"
     >
-      {copied ? <Check className="h-3.5 w-3.5 text-yellow-400" /> : <Copy className="h-3.5 w-3.5" />}
+      {copied ? <Check className="h-3.5 w-3.5 text-cyan-400" /> : <Copy className="h-3.5 w-3.5" />}
       {copied ? "Copied" : label}
     </button>
   );
@@ -94,7 +94,7 @@ function AcTokenOption({ requestId, depositUsd }: { requestId: string; depositUs
           href={SUPPORT_TELEGRAM_URL}
           target="_blank"
           rel="noopener"
-          className="font-semibold text-yellow-400 hover:underline"
+          className="font-semibold text-cyan-400 hover:underline"
         >
           Telegram
         </a>{" "}
@@ -155,7 +155,7 @@ function ManualFallback({
           href={SUPPORT_TELEGRAM_URL}
           target="_blank"
           rel="noopener"
-          className="font-semibold text-yellow-400 hover:underline"
+          className="font-semibold text-cyan-400 hover:underline"
         >
           Telegram
         </a>{" "}
@@ -302,7 +302,7 @@ export function UsdtPayment({ requestId, amountDue }: { requestId: string; amoun
       {/* The amount is the biggest thing here on purpose. The address is
           shared by every invoice; the amount is the only thing that says
           which one this is. */}
-      <div className="rounded-xl border-2 border-yellow-400 bg-yellow-400/5 p-4">
+      <div className="rounded-xl border-2 border-cyan-400 bg-cyan-400/5 p-4">
         <p className="text-xs font-semibold tracking-wide text-fg-muted uppercase">
           Send exactly this amount
         </p>
@@ -342,7 +342,7 @@ export function UsdtPayment({ requestId, amountDue }: { requestId: string; amoun
       <p
         className={`flex items-center gap-1.5 text-sm ${
           status === "paid"
-            ? "font-semibold text-yellow-400"
+            ? "font-semibold text-cyan-400"
             : status === "problem"
               ? "text-orange-300"
               : "text-fg-muted"

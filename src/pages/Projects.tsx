@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { DashboardShell } from "../components/dashboard/DashboardShell";
 import { useAuth } from "../context/AuthContext";
+import { taskTypeLabel } from "../lib/pricing";
 import { shortDate } from "../lib/format";
 import { supabase } from "../lib/supabase";
 import { statusClass, statusLabel } from "../lib/status";
@@ -132,7 +133,12 @@ export function Projects() {
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-fg">
-                    {r.task_type || r.service_category}
+                    {/* Through taskTypeLabel, not raw. Requests placed since the
+                        catalogue restructure store a service id, so printing
+                        the column would show a customer "AG-01" where the
+                        service name belongs. Older rows hold the name and
+                        come back unchanged. */}
+                    {r.task_type ? taskTypeLabel(r.task_type) : r.service_category}
                   </p>
                   <p className="text-xs text-fg-faint">Submitted {shortDate(r.created_at)}</p>
                 </div>
@@ -156,7 +162,7 @@ export function Projects() {
             <p className="mt-3 text-sm text-fg-muted">No projects yet.</p>
             <Link
               to="/dashboard"
-              className="mt-4 inline-flex rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-void"
+              className="mt-4 inline-flex rounded-full bg-cyan-400 px-5 py-2.5 text-sm font-semibold text-void"
             >
               Place a request
             </Link>
@@ -247,7 +253,7 @@ function ProjectCard({
               type="button"
               disabled={busy === `rev:${p.id}`}
               onClick={() => call(`rev:${p.id}`, "request_project_revision", { p_project_id: p.id })}
-              className="inline-flex items-center gap-1.5 rounded-full border-2 border-border px-3.5 py-2 text-xs font-semibold text-fg-muted transition-colors hover:border-yellow-400/50 hover:text-fg disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-full border-2 border-border px-3.5 py-2 text-xs font-semibold text-fg-muted transition-colors hover:border-cyan-400/50 hover:text-fg disabled:opacity-60"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               Request revision
@@ -269,7 +275,7 @@ function ProjectCard({
                 void call(`approve:${p.id}`, "approve_project_delivery", { p_project_id: p.id });
               }
             }}
-            className="inline-flex items-center gap-1.5 rounded-full bg-yellow-400 px-3.5 py-2 text-xs font-semibold text-void transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+            className="inline-flex items-center gap-1.5 rounded-full bg-cyan-400 px-3.5 py-2 text-xs font-semibold text-void transition-transform hover:-translate-y-0.5 disabled:opacity-60"
           >
             <Check className="h-3.5 w-3.5" />
             Approve &amp; pay remaining

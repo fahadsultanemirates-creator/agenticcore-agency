@@ -20,10 +20,10 @@ export const STATUS_LABELS: Record<string, string> = {
 
 /** Colour by what the client should feel: done, waiting, or needs them. */
 const TONE: Record<string, string> = {
-  delivered: "border-yellow-400/40 bg-yellow-400/10 text-yellow-400",
-  approved: "border-yellow-400/40 bg-yellow-400/10 text-yellow-400",
-  paid: "border-yellow-400/40 bg-yellow-400/10 text-yellow-400",
-  confirmed: "border-yellow-400/30 bg-yellow-400/5 text-yellow-300",
+  delivered: "border-cyan-400/40 bg-cyan-400/10 text-cyan-400",
+  approved: "border-cyan-400/40 bg-cyan-400/10 text-cyan-400",
+  paid: "border-cyan-400/40 bg-cyan-400/10 text-cyan-400",
+  confirmed: "border-cyan-400/30 bg-cyan-400/5 text-cyan-300",
   awaiting_review: "border-orange-400/40 bg-orange-400/10 text-orange-300",
   revision_requested: "border-orange-400/40 bg-orange-400/10 text-orange-300",
   awaiting_payment: "border-orange-400/40 bg-orange-400/10 text-orange-300",

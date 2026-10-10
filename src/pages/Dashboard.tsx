@@ -1,8 +1,8 @@
-import { ArrowRight, FolderKanban, Package, Send, Sparkles } from "lucide-react";
+import { ArrowRight, FolderKanban, Send, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { DashboardShell } from "../components/dashboard/DashboardShell";
-import { AGENTICCORE_PACKAGE, serviceCategories } from "../data/services";
+import { capabilities, formatPrice, packages, SERVICE_COUNT } from "../data/catalog";
 import { useAuth } from "../context/AuthContext";
 import { money } from "../lib/format";
 import { supabase } from "../lib/supabase";
@@ -63,14 +63,14 @@ export function Dashboard() {
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link
             to="/projects"
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-yellow-400 px-6 py-3 text-sm font-semibold text-void shadow-glow-yellow transition-transform hover:-translate-y-0.5"
+            className="inline-flex items-center justify-center gap-2 rounded-full bg-cyan-400 px-6 py-3 text-sm font-semibold text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5"
           >
             <FolderKanban className="h-4 w-4" />
             Your projects
           </Link>
           <Link
             to="/forge"
-            className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-border px-6 py-3 text-sm font-semibold text-fg transition-colors hover:border-yellow-400/50"
+            className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-border px-6 py-3 text-sm font-semibold text-fg transition-colors hover:border-cyan-400/50"
           >
             <Sparkles className="h-4 w-4" />
             Chat with Forge
@@ -80,59 +80,78 @@ export function Dashboard() {
 
       {/* ---- services ---- */}
       <section className="border-t border-border py-10">
-        <h2 className="font-display text-2xl font-semibold text-fg">Place a request</h2>
-        <p className="mt-1.5 text-sm text-fg-muted">
-          {serviceCategories.length} categories, every price fixed up front.
-        </p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-2xl font-semibold text-fg">Start something</h2>
+            <p className="mt-1.5 text-sm text-fg-muted">
+              {SERVICE_COUNT} services. Fixed prices take a 30% deposit; anything priced on scope
+              is quoted first.
+            </p>
+          </div>
+          <Link
+            to="/services"
+            className="shrink-0 text-sm font-semibold text-cyan-400 transition-colors hover:text-cyan-300"
+          >
+            Browse all {SERVICE_COUNT} →
+          </Link>
+        </div>
 
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {serviceCategories.map((category) => {
-            const Icon = category.icon;
-            return (
-              <Link
-                key={category.id}
-                to={`/request?service=${category.id}`}
-                className="group flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-yellow-400/50"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-void text-yellow-400">
-                  <Icon className="h-5 w-5" />
-                </span>
-                <span className="min-w-0">
-                  <span className="block font-semibold text-fg">{category.label}</span>
-                  <span className="mt-0.5 block text-xs text-fg-muted">{category.tagline}</span>
-                  <span className="mt-1.5 block text-xs font-semibold text-yellow-400">
-                    From ${category.fromUsd}
-                  </span>
-                </span>
-                <ArrowRight className="mt-1 ml-auto h-4 w-4 shrink-0 text-fg-faint transition-colors group-hover:text-yellow-400" />
-              </Link>
-            );
-          })}
+        {/* The same four front doors as the homepage, from the same data,
+            so a client who browsed before signing up recognises them. */}
+        <div className="mt-6 grid gap-3 sm:grid-cols-2">
+          {capabilities.map((capability) => (
+            <Link
+              key={capability.id}
+              to={`/services?capability=${capability.id}`}
+              className="group flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 transition-colors hover:border-cyan-400/50"
+            >
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border bg-void text-cyan-400">
+                <capability.icon className="h-5 w-5" />
+              </span>
+              <span className="min-w-0">
+                <span className="block font-semibold text-fg">{capability.title}</span>
+                <span className="mt-0.5 block text-xs text-fg-muted">{capability.blurb}</span>
+              </span>
+              <ArrowRight className="mt-1 ml-auto h-4 w-4 shrink-0 text-fg-faint transition-colors group-hover:text-cyan-400" />
+            </Link>
+          ))}
         </div>
       </section>
 
-      {/* ---- the one bundle ---- */}
+      {/* ---- packages ---- */}
       <section className="border-t border-border py-10">
-        <div className="rounded-2xl border border-yellow-400/30 bg-yellow-400/5 p-6">
-          <div className="flex items-start gap-3">
-            <Package className="mt-0.5 h-5 w-5 shrink-0 text-yellow-400" />
-            <div className="min-w-0">
-              <h2 className="font-display text-xl font-semibold text-fg">
-                {AGENTICCORE_PACKAGE.label} — {money(AGENTICCORE_PACKAGE.priceUsd)}
-              </h2>
-              <p className="mt-1.5 text-sm text-fg-muted">
-                Priority handling with no scoping back-and-forth, and every service after it at 50%
-                off.
-              </p>
-              <Link
-                to="/request?package=1"
-                className="mt-4 inline-flex items-center gap-2 rounded-full bg-yellow-400 px-5 py-2.5 text-sm font-semibold text-void transition-transform hover:-translate-y-0.5"
-              >
-                Order the package
-                <Send className="h-4 w-4" />
-              </Link>
-            </div>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="font-display text-2xl font-semibold text-fg">Packages</h2>
+            <p className="mt-1.5 text-sm text-fg-muted">
+              Fixed bundles, each built from catalogue services.
+            </p>
           </div>
+          <Link
+            to="/packages"
+            className="shrink-0 text-sm font-semibold text-cyan-400 transition-colors hover:text-cyan-300"
+          >
+            Compare them →
+          </Link>
+        </div>
+
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          {packages.map((pkg) => (
+            <Link
+              key={pkg.id}
+              to={`/request?package=${pkg.id}`}
+              className="flex flex-col rounded-2xl border border-cyan-400/30 bg-cyan-400/5 p-5 transition-colors hover:border-cyan-400/60"
+            >
+              <span className="font-display text-base font-semibold text-fg">{pkg.name}</span>
+              <span className="mt-1 font-display text-2xl font-semibold text-cyan-400">
+                {formatPrice(pkg)}
+              </span>
+              <span className="mt-2 text-xs text-fg-muted">{pkg.audience}</span>
+              <span className="mt-auto flex items-center gap-1.5 pt-4 text-sm font-semibold text-cyan-400">
+                {pkg.cta} <Send className="h-3.5 w-3.5" />
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -141,7 +160,7 @@ export function Dashboard() {
         <h2 className="font-display text-2xl font-semibold text-fg">Billing</h2>
         <p className="mt-1.5 text-sm text-fg-muted">
           30% upfront, 70% on completion, for every service and package.{" "}
-          <Link to="/terms" className="font-semibold text-yellow-400 hover:underline">
+          <Link to="/terms" className="font-semibold text-cyan-400 hover:underline">
             Read the full payment &amp; delivery policy
           </Link>
           .

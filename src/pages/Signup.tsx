@@ -49,7 +49,7 @@ export function Signup() {
       footer={
         <>
           Already have one?{" "}
-          <Link to="/login" className="font-semibold text-yellow-400 hover:underline">
+          <Link to="/login" className="font-semibold text-cyan-400 hover:underline">
             Log in
           </Link>
         </>
@@ -93,7 +93,7 @@ export function Signup() {
           />
         </label>
 
-        {error && <p className="text-sm text-yellow-400">{error}</p>}
+        {error && <p className="text-sm text-cyan-400">{error}</p>}
 
         <SubmitButton pending={submitting}>
           {submitting ? "Creating…" : "Create account"}

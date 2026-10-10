@@ -4,25 +4,44 @@
   --font-display: "Fraunces", ui-serif, Georgia, serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
 
-  --color-void: #09090d;
-  --color-surface: #151519;
-  --color-surface-2: #1e1e24;
-  --color-border: #2a2a32;
+  /* Agency's identity is cyan. The yellow it used to share with .click
+   * made the two sites indistinguishable in a browser tab, which is the
+   * opposite of what three separate brands are for.
+   *
+   * The neutrals here are a shade cooler than .click's and .biz's --
+   * #080A0D rather than #09090d -- because a warm grey under cyan reads
+   * muddy. The three sites stay recognisably one family through layout
+   * and type, not through sharing a hex value.
+   *
+   * Measured against these backgrounds: cyan-400 on void is 12.69:1,
+   * cyan-400 on a card 11.19:1, muted text on void 9.29:1, white on void
+   * 19.82:1 -- all AAA.
+   *
+   * The exception that governs every button on the site: WHITE ON
+   * CYAN-400 IS 1.56:1, which is unreadable. Dark text on cyan, always.
+   * Every primary button is `bg-cyan-400 text-void`, and nothing should
+   * put white on a cyan fill. */
+  --color-void: #080a0d;
+  --color-surface: #11161c;
+  --color-surface-2: #151a21;
+  --color-border: #222b35;
 
-  --color-fg: #f6f5f2;
-  --color-fg-muted: #a6a4b0;
-  --color-fg-faint: #6d6b78;
+  --color-fg: #ffffff;
+  --color-fg-muted: #a8b3bd;
+  --color-fg-faint: #6b7885;
 
-  --color-yellow-100: #fff6cf;
-  --color-yellow-200: #ffee9d;
-  --color-yellow-300: #ffe45f;
-  --color-yellow-400: #ffd400;
-  --color-yellow-500: #ffcc00;
-  --color-yellow-600: #e0ac00;
-  --color-yellow-700: #a37c00;
+  /* 300, 400 and 500 are the owner's approved tokens -- light, primary and
+   * secondary cyan. The rest of the ramp is built around them. */
+  --color-cyan-100: #d6feff;
+  --color-cyan-200: #adfbff;
+  --color-cyan-300: #8cf8ff;
+  --color-cyan-400: #00e5ee;
+  --color-cyan-500: #00c8d7;
+  --color-cyan-600: #00a3b0;
+  --color-cyan-700: #077684;
 
   --shadow-glow: 0 0 0 1px var(--color-border), 0 20px 40px -12px rgba(0, 0, 0, 0.6);
-  --shadow-glow-yellow: 0 8px 30px -8px rgba(255, 212, 0, 0.45);
+  --shadow-glow-cyan: 0 8px 30px -8px rgba(0, 229, 238, 0.45);
 }
 
 html {
@@ -38,12 +57,12 @@ body {
 }
 
 ::selection {
-  background-color: var(--color-yellow-400);
+  background-color: var(--color-cyan-400);
   color: var(--color-void);
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-yellow-400);
+  outline: 2px solid var(--color-cyan-400);
   outline-offset: 2px;
 }
 
@@ -105,15 +124,15 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  color: var(--color-yellow-400);
+  color: var(--color-cyan-400);
   text-decoration: underline;
-  text-decoration-color: color-mix(in srgb, var(--color-yellow-400) 40%, transparent);
+  text-decoration-color: color-mix(in srgb, var(--color-cyan-400) 40%, transparent);
   text-underline-offset: 4px;
   transition: text-decoration-color 0.2s ease;
 }
 
 .link-underline:hover {
-  text-decoration-color: var(--color-yellow-400);
+  text-decoration-color: var(--color-cyan-400);
 }
 
 @keyframes fade-up {
@@ -147,10 +166,10 @@ a {
 
 @keyframes pulse-ring {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 212, 0, 0.5);
+    box-shadow: 0 0 0 0 rgba(0, 229, 238, 0.5);
   }
   100% {
-    box-shadow: 0 0 0 14px rgba(255, 212, 0, 0);
+    box-shadow: 0 0 0 14px rgba(0, 229, 238, 0);
   }
 }
 

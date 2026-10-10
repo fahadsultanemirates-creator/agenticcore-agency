@@ -15,9 +15,54 @@
   command = "npm run build"
   publish = "dist"
 
+# The pages these replace are deleted. They were the old 54-service site
+# on a pink theme (public/main.css's --accent-cyan holds #ff1e9e, which
+# is hot pink and not cyan at all), still advertising services Agency no
+# longer sells at prices it no longer charges. They are in search results
+# and in people's bookmarks, so they redirect rather than 404.
+#
+# Order matters: Netlify applies redirects top to bottom, so these sit
+# above the catch-all.
+[[redirects]]
+  from = "/services.html"
+  to = "/services"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/packages.html"
+  to = "/packages"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/how-it-works.html"
+  to = "/#how-it-works"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/legacy-landing.html"
+  to = "/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/terms.html"
+  to = "/terms"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/privacy.html"
+  to = "/privacy"
+  status = 301
+  force = true
+
 # Netlify serves a matching file before it consults redirects, so every
-# legacy /*.html page still wins this rule. It only fires for paths with
-# no file behind them -- which is exactly the React router's territory.
+# legacy /*.html page that still exists wins this rule. It only fires for
+# paths with no file behind them -- which is exactly the React router's
+# territory.
 [[redirects]]
   from = "/*"
   to = "/index.html"

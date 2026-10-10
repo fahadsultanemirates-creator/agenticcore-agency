@@ -1,28 +1,35 @@
-import { ArrowRight } from "lucide-react";
-import { Reveal } from "../Reveal";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export function CtaBanner() {
   return (
-    <section className="relative mx-auto max-w-6xl overflow-hidden px-6 pb-20 md:pb-28">
-      <Reveal>
-        <div className="relative overflow-hidden rounded-3xl bg-yellow-400 px-6 py-16 text-center sm:px-12">
-          <h2 className="relative font-display text-4xl font-semibold tracking-tight text-void sm:text-5xl">
-            Ready to start?
-          </h2>
-          <p className="relative mx-auto mt-4 max-w-xl text-lg text-void/80">
-            Open an account, describe the job, and you get a scope and a price back before anything
-            is charged.
-          </p>
+    <section className="border-t border-border">
+      <div className="mx-auto max-w-4xl px-4 py-16 text-center sm:px-6 md:py-24">
+        <h2 className="font-display text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
+          Your Next Digital Project Starts Here.
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-fg-muted">
+          Whether you're launching a professional website or developing an intelligent business
+          system, tell us what you need and get a clear path forward.
+        </p>
+
+        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
-            to="/signup"
-            className="relative mt-8 inline-flex items-center gap-2 rounded-full bg-void px-7 py-3.5 text-base font-semibold text-fg transition-transform hover:-translate-y-0.5"
+            to="/request"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-cyan-400 px-7 py-3.5 text-base font-semibold text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5 sm:w-auto"
           >
-            Create your account
+            Start Your Project
             <ArrowRight className="h-4 w-4" />
           </Link>
+          <Link
+            to="/forge"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-border px-7 py-3.5 text-base font-semibold text-fg transition-colors hover:border-cyan-400/60 sm:w-auto"
+          >
+            <Sparkles className="h-4 w-4 text-cyan-400" />
+            Talk to Forge
+          </Link>
         </div>
-      </Reveal>
+      </div>
     </section>
   );
 }
