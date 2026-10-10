@@ -1,5 +1,6 @@
 import { Mail } from "lucide-react";
 import type { ComponentType } from "react";
+import { TELEGRAM_URL } from "../../data/contact";
 import { Link } from "react-router-dom";
 import { Logo } from "../Logo";
 import { FacebookIcon, InstagramIcon, XIcon, YouTubeIcon } from "../icons/SocialIcons";
@@ -15,6 +16,7 @@ const SOCIALS: { href: string; label: string; icon: ComponentType<{ className?: 
 ];
 
 const LEGAL = [
+  { href: "/contact", label: "Contact" },
   { href: "/terms", label: "Terms" },
   { href: "/privacy", label: "Privacy" },
 ];
@@ -59,7 +61,7 @@ export function Footer() {
               <Mail className="h-5 w-5" />
             </a>
             <a
-              href="https://t.me/agenticcore_support"
+              href={TELEGRAM_URL}
               target="_blank"
               rel="noreferrer"
               aria-label="Support on Telegram"

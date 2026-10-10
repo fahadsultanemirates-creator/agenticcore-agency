@@ -1,5 +1,6 @@
 import { ArrowLeft, Loader2, Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { TELEGRAM_URL } from "../data/contact";
 import { Link, useSearchParams } from "react-router-dom";
 import { Logo } from "../components/Logo";
 import { ProjectDraftForm } from "../components/forge/ProjectDraftForm";
@@ -15,7 +16,8 @@ import { supabase } from "../lib/supabase";
 // channel. Ported from public/forge.js.
 
 const VISITOR_ID_STORAGE_KEY = "agenticcore_visitor_id";
-const MANAGER_TELEGRAM_URL = "https://t.me/agenticcore_managers";
+// One handle for the whole brand; see src/data/contact.ts.
+const MANAGER_TELEGRAM_URL = TELEGRAM_URL;
 
 // The old set offered "Set up my full business for $150" and a logo --
 // a package that no longer exists and work that belongs to .click.

@@ -90,6 +90,18 @@ export function Terms() {
         </p>
       </Clause>
 
+      <Clause heading="Cancellation and refunds">
+        <Bullets
+          items={[
+            "Before work starts, the 30% deposit is refundable in full.",
+            "Once work has started the deposit covers work already performed and is not refundable, but you are not charged the balance for anything not delivered.",
+            "If we cannot deliver what was agreed, you are refunded in full — including the deposit.",
+            "Monthly services can be cancelled any time before the next billing date and run to the end of the cycle already paid for. We do not pro-rate part-months.",
+            "Where work is delivered and you believe it does not match what was agreed, tell us within 14 days and we will correct it or refund that service.",
+          ]}
+        />
+      </Clause>
+
       <Clause heading="What AI agents we build will and will not do">
         <p>
           Agents and automations we build operate within the scope agreed, and a person reviews

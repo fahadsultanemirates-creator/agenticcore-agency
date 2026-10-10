@@ -1,6 +1,6 @@
 import { AlertTriangle, ArrowRight, Check, Clock, FileText, Paperclip } from "lucide-react";
-import { useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { DashboardShell } from "../components/dashboard/DashboardShell";
 import { UsdtPayment } from "../components/payment/UsdtPayment";
 import {
@@ -16,6 +16,11 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { money } from "../lib/format";
 import { upfrontAmountDue } from "../lib/pricing";
+import {
+  clearRequestDraft,
+  loadRequestDraft,
+  saveRequestDraft,
+} from "../lib/requestDraft";
 import { supabase } from "../lib/supabase";
 
 /**
@@ -35,6 +40,7 @@ type Placed = Invoiced | Quoting;
 export function Request() {
   const [params] = useSearchParams();
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // ?package=PKG-… orders a bundle; ?service=AG-… preselects one service.
   const pkg = useMemo(() => packageById(params.get("package") ?? ""), [params]);
@@ -47,7 +53,36 @@ export function Request() {
   const [submitting, setSubmitting] = useState(false);
   const [placed, setPlaced] = useState<Placed | null>(null);
 
-  const chosen: Service | Package | null = pkg ?? service;
+  // A package chosen before the sign-in detour. `pkg` can only come from
+  // ?package=, and we send people back here without query parameters.
+  const [restoredPackage, setRestoredPackage] = useState<Package | null>(null);
+  const [lostAttachment, setLostAttachment] = useState(false);
+
+  const chosen: Service | Package | null = pkg ?? service ?? restoredPackage;
+
+  /**
+   * Put back whatever they had typed before being sent to sign up.
+   *
+   * Runs once. Anything already chosen from the URL wins, so arriving at
+   * /request?service=AG-06 is never overridden by a stale draft.
+   */
+  useEffect(() => {
+    if (pkg || preselected) return;
+    const draft = loadRequestDraft();
+    if (!draft) return;
+    clearRequestDraft();
+
+    const draftService = serviceById(draft.chosenId);
+    const draftPackage = draftService ? null : (packageById(draft.chosenId) ?? null);
+    // The catalogue can change between saving and restoring. Dropping the
+    // draft is correct then -- better than preselecting something retired.
+    if (!draftService && !draftPackage) return;
+
+    if (draftService) setService(draftService);
+    else setRestoredPackage(draftPackage);
+    setDescription(draft.description);
+    setLostAttachment(draft.hadAttachment);
+  }, [pkg, preselected]);
 
   /**
    * Whether a price can be agreed at the point of ordering.
@@ -67,7 +102,21 @@ export function Request() {
   const ready = Boolean(chosen) && description.trim().length > 0;
 
   const submit = async () => {
-    if (!user || !ready || !chosen) return;
+    if (!ready || !chosen) return;
+
+    // The whole point of this page being public. They have chosen a service
+    // and written a brief; now they make an account to track it, and come
+    // back to find it still here.
+    if (!user) {
+      saveRequestDraft({
+        chosenId: chosen.id,
+        description: description.trim(),
+        hadAttachment: Boolean(file),
+      });
+      navigate("/signup", { state: { from: "/request" } });
+      return;
+    }
+
     setError("");
     setSubmitting(true);
 
@@ -311,6 +360,14 @@ export function Request() {
             </div>
           </dl>
 
+          {lostAttachment ? (
+            <p className="mt-3 flex items-start gap-2 text-sm text-fg-muted">
+              <Paperclip aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-cyan-400" />
+              Your brief is back, but the file you attached could not be carried across the sign-up
+              step. Please attach it again.
+            </p>
+          ) : null}
+
           {error ? <p className="mt-3 text-sm text-cyan-300">{error}</p> : null}
 
           <button
@@ -319,9 +376,26 @@ export function Request() {
             disabled={!ready || submitting}
             className="mt-4 inline-flex items-center gap-2 rounded-full bg-cyan-400 px-6 py-3 text-sm font-semibold text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting ? "Sending…" : agreedPrice === null ? "Request a quote" : "Submit and pay deposit"}
+            {submitting
+              ? "Sending…"
+              : !user
+                ? "Continue — create your account"
+                : agreedPrice === null
+                  ? "Request a quote"
+                  : "Submit and pay deposit"}
             <ArrowRight className="h-4 w-4" />
           </button>
+
+          {/* Said before the click, not after it. A visitor who has just
+              written a brief and is then asked to register deserves to know
+              it is coming and that the brief survives. */}
+          {!user ? (
+            <p className="mt-3 max-w-md text-xs text-fg-faint">
+              No account needed to get this far. The last step is a quick sign-up so you can track
+              the project, see the quote and talk to us about it — what you have written here comes
+              with you.
+            </p>
+          ) : null}
         </Step>
       </section>
     </DashboardShell>
