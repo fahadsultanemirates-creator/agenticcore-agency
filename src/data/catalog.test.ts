@@ -17,6 +17,8 @@ import {
   categories,
   featuredServices,
   formatPrice,
+  heroFloors,
+  heroFloorUsd,
   needsQuote,
   packages,
   serviceById,
@@ -281,6 +283,36 @@ test("MCP is not sold as a multi-agent framework", () => {
   const mcp = serviceById("AG-18")!;
   assert.match(mcp.scopeLimits.join(" "), /not itself a multi-agent framework/i);
 });
+
+test("the hero's price floors name the services they actually come from", () => {
+  // The hero read "Professional websites from $49" for weeks. $49 is AG-01,
+  // which is a single landing page; the cheapest real website is AG-02 at
+  // $149. Pinning the numbers alone would not have caught that -- $49 was a
+  // true price, attached to the wrong noun -- so this also asserts that each
+  // label matches the name of the service it quotes.
+  const quoted = heroFloors.map((f) => [f.label, heroFloorUsd(f.serviceId)]);
+  assert.deepEqual(quoted, [
+    ["Landing pages", 49],
+    ["websites", 149],
+    ["custom AI agents", 149],
+  ]);
+
+  const nounFor: Record<string, RegExp> = {
+    "Landing pages": /landing page/i,
+    websites: /website/i,
+    "custom AI agents": /ai agent/i,
+  };
+  for (const floor of heroFloors) {
+    const service = serviceById(floor.serviceId);
+    assert.ok(service, `${floor.serviceId} is quoted by the hero but not in the catalogue`);
+    assert.match(
+      service.name,
+      nounFor[floor.label],
+      `the hero calls ${floor.serviceId} "${floor.label}", but it is "${service.name}"`,
+    );
+  }
+});
+
 
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

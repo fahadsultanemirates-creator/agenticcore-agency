@@ -928,3 +928,21 @@ export function formatPrice(item: Service | Package): string {
   }
   return `${from}${money}`;
 }
+
+// The price floors the homepage hero quotes. Each one carries the id of the
+// service it comes from, so the copy cannot drift from the catalogue the way
+// "Professional websites from $49" did: $49 is AG-01, a single landing page,
+// while the cheapest service that is actually a website is AG-02 at $149.
+export const heroFloors = [
+  { label: "Landing pages", serviceId: "AG-01" },
+  { label: "websites", serviceId: "AG-02" },
+  { label: "custom AI agents", serviceId: "AG-15" },
+] as const;
+
+export function heroFloorUsd(serviceId: string): number {
+  const service = serviceById(serviceId);
+  if (!service || service.status !== "active") {
+    throw new Error(`the hero quotes ${serviceId}, which is not an active service`);
+  }
+  return service.priceUsd;
+}
