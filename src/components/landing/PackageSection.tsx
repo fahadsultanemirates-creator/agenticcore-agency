@@ -1,72 +1,67 @@
-import { ArrowRight, Check } from "lucide-react";
-import { AGENTICCORE_PACKAGE } from "../../data/services";
-import { Reveal } from "../Reveal";
+import { ArrowRight, Check, X } from "lucide-react";
 import { Link } from "react-router-dom";
-
-// One bundle, not a tier ladder. The three-tier Low/Mid/High system was
-// already removed from the price sheet; selling it again here would be
-// the site contradicting its own catalogue.
-const INCLUDED = [
-  "A multi-page website, written, designed and deployed",
-  "Logo and a brand style guide to match",
-  "A social media post pack to launch with",
-  "Business card, letterhead and receipt design",
-  "A marketing strategy and feasibility plan",
-  "Invoicing and receipts set up and ready to use",
-];
+import { formatPrice, packages } from "../../data/catalog";
 
 export function PackageSection() {
   return (
-    <section id="package" className="mx-auto max-w-6xl px-6 py-20 md:py-28">
-      <div className="mx-auto mb-14 max-w-2xl text-center">
-        <h2 className="font-display text-4xl font-semibold tracking-tight text-fg sm:text-5xl">
-          Or take the whole thing at once
+    <section id="packages" className="border-t border-border bg-surface/30">
+      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+        <h2 className="font-display text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
+          Choose Your Starting Point.
         </h2>
-        <p className="mt-4 text-lg text-fg-muted">
-          Everything a business needs to open its doors, bought together instead of one piece at a
-          time.
+        <p className="mt-2 max-w-xl text-fg-muted">
+          Three bundles at a fixed price. Every one lists what it does not cover, because that is
+          the half people find out about later.
         </p>
-      </div>
 
-      <Reveal>
-        <div className="relative mx-auto max-w-3xl overflow-hidden rounded-3xl border-2 border-yellow-400 bg-gradient-to-br from-yellow-400/10 to-transparent p-7 sm:p-10">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full bg-yellow-400/10 blur-3xl"
-          />
-          <div className="relative">
-            <p className="text-xs font-semibold tracking-wide text-yellow-400 uppercase">
-              The one bundle
-            </p>
-            <h3 className="mt-2 font-display text-3xl font-semibold text-fg sm:text-4xl">
-              {AGENTICCORE_PACKAGE.label}
-            </h3>
-            <p className="mt-2 font-display text-5xl font-semibold text-yellow-400">
-              ${AGENTICCORE_PACKAGE.priceUsd}
-            </p>
-            <p className="mt-2 text-sm text-fg-muted">
-              Bought separately these come to well over ${AGENTICCORE_PACKAGE.priceUsd * 2}.
-            </p>
-
-            <ul className="mt-7 grid gap-3 sm:grid-cols-2">
-              {INCLUDED.map((item) => (
-                <li key={item} className="flex items-start gap-2.5 text-sm text-fg-muted">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-yellow-400" strokeWidth={2.5} />
-                  {item}
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              to="/request?package=1"
-              className="mt-8 inline-flex items-center gap-2 rounded-full bg-yellow-400 px-6 py-3 text-sm font-semibold text-void shadow-glow-yellow transition-transform hover:-translate-y-0.5"
+        <div className="mt-10 grid gap-4 lg:grid-cols-3">
+          {packages.map((pkg) => (
+            <div
+              key={pkg.id}
+              className="flex flex-col rounded-2xl border border-border bg-surface p-6 transition-colors hover:border-cyan-400/40"
             >
-              See what's included
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+              <h3 className="font-display text-xl font-semibold text-fg">{pkg.name}</h3>
+              <p className="mt-1 font-display text-3xl font-semibold text-cyan-400">
+                {formatPrice(pkg)}
+              </p>
+              <p className="mt-2 text-sm text-fg-muted">{pkg.audience}</p>
+
+              <ul className="mt-5 flex flex-col gap-2">
+                {pkg.included.map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-sm text-fg-muted">
+                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-400" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              <p className="mt-5 text-xs font-semibold tracking-wide text-fg-faint uppercase">
+                Not included
+              </p>
+              <ul className="mt-2 flex flex-col gap-1.5">
+                {pkg.excluded.map((item) => (
+                  <li key={item} className="flex items-start gap-2 text-xs text-fg-faint">
+                    <X className="mt-0.5 h-3 w-3 shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              <p className="mt-4 text-xs text-fg-faint">
+                {pkg.deliveryEstimate} · {pkg.revisions} revision round
+              </p>
+
+              <Link
+                to={`/packages#${pkg.id}`}
+                className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5"
+              >
+                {pkg.cta}
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          ))}
         </div>
-      </Reveal>
+      </div>
     </section>
   );
 }

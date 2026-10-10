@@ -23,7 +23,7 @@ export function ResetRequest() {
       title="Reset your password"
       subtitle="We'll email you a link to set a new one."
       footer={
-        <Link to="/login" className="font-semibold text-yellow-400 hover:underline">
+        <Link to="/login" className="font-semibold text-cyan-400 hover:underline">
           Back to log in
         </Link>
       }
@@ -32,7 +32,7 @@ export function ResetRequest() {
         // Deliberately the same message whatever happened. Saying "no
         // account with that email" would turn this box into a way to find
         // out who has an account here.
-        <p className="mt-6 rounded-xl border border-yellow-400/30 bg-yellow-400/5 p-4 text-sm text-fg-muted">
+        <p className="mt-6 rounded-xl border border-cyan-400/30 bg-cyan-400/5 p-4 text-sm text-fg-muted">
           If an account exists for that email, a reset link is on its way.
         </p>
       ) : (

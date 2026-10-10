@@ -40,7 +40,7 @@ export function AuthLayout({
 
 /** Shared input styling, so every auth field looks like the others. */
 export const authFieldClass =
-  "rounded-xl border-2 border-border bg-void px-3.5 py-2.5 text-fg placeholder:text-fg-faint focus:border-yellow-400 focus:outline-none";
+  "rounded-xl border-2 border-border bg-void px-3.5 py-2.5 text-fg placeholder:text-fg-faint focus:border-cyan-400 focus:outline-none";
 
 export function FieldLabel({ children }: { children: ReactNode }) {
   return <span className="text-xs font-semibold tracking-wide text-fg-muted uppercase">{children}</span>;
@@ -51,7 +51,7 @@ export function SubmitButton({ children, pending }: { children: ReactNode; pendi
     <button
       type="submit"
       disabled={pending}
-      className="mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-yellow-400 px-5 py-3 text-sm font-semibold text-void shadow-glow-yellow transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+      className="mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-cyan-400 px-5 py-3 text-sm font-semibold text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {children}
     </button>

@@ -56,7 +56,7 @@ export function ResetPassword() {
             className={authFieldClass}
           />
         </label>
-        {error && <p className="text-sm text-yellow-400">{error}</p>}
+        {error && <p className="text-sm text-cyan-400">{error}</p>}
         <SubmitButton pending={submitting}>
           {submitting ? "Saving…" : "Set new password"}
         </SubmitButton>

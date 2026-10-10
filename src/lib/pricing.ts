@@ -1,4 +1,4 @@
-import { serviceCategories } from "../data/services";
+import { categories, serviceById } from "../data/catalog";
 
 /**
  * The deposit due to start a job: 30%, the split the site promises.
@@ -16,7 +16,22 @@ export function upfrontAmountDue(agreedPrice: number): number {
 
 export function findCategory(id: string | null) {
   if (!id) return null;
-  return serviceCategories.find((c) => c.id === id) ?? null;
+  return categories.find((c) => c.id === id) ?? null;
+}
+
+/**
+ * The display name for whatever requests.task_type holds.
+ *
+ * Rows written since the catalogue restructure store a service id
+ * (AG-07). Rows written before it store the service NAME as the old
+ * wizard wrote it ("Multi-page website (3-5 pages)"). Both have to
+ * render, and an old order must keep reading as the thing that was
+ * actually bought -- so an unrecognised value is shown as-is rather than
+ * guessed at or hidden.
+ */
+export function taskTypeLabel(taskType: string | null): string {
+  if (!taskType) return "Request";
+  return serviceById(taskType)?.name ?? taskType;
 }
 
 /**

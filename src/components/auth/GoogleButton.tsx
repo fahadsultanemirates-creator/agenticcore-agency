@@ -29,7 +29,7 @@ export function GoogleButton({ onError }: { onError: (message: string) => void }
             onError(error);
           }
         }}
-        className="flex w-full items-center justify-center gap-2.5 rounded-full border-2 border-border bg-void px-5 py-2.5 text-sm font-semibold text-fg transition-colors hover:border-yellow-400/50 disabled:cursor-not-allowed disabled:opacity-60"
+        className="flex w-full items-center justify-center gap-2.5 rounded-full border-2 border-border bg-void px-5 py-2.5 text-sm font-semibold text-fg transition-colors hover:border-cyan-400/50 disabled:cursor-not-allowed disabled:opacity-60"
       >
         <GoogleMark />
         {pending ? "Opening Google…" : "Continue with Google"}

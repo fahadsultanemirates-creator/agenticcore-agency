@@ -1,6 +1,6 @@
 import { ArrowLeft, Loader2, Send, Sparkles } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Logo } from "../components/Logo";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
@@ -16,15 +16,17 @@ import { supabase } from "../lib/supabase";
 const VISITOR_ID_STORAGE_KEY = "agenticcore_visitor_id";
 const MANAGER_TELEGRAM_URL = "https://t.me/agenticcore_managers";
 
+// The old set offered "Set up my full business for $150" and a logo --
+// a package that no longer exists and work that belongs to .click.
 const SUGGESTIONS = [
-  "I need a website for my business",
-  "Set up my full business for $150",
-  "I want a logo and brand kit",
-  "What can Forge actually do?",
+  "I need a professional website for my consulting business",
+  "Build a customer dashboard with login and order tracking",
+  "I want an AI assistant that answers questions about my business",
+  "Automate repetitive tasks between my CRM and other tools",
 ];
 
 const GREETING =
-  "Hi, I'm Forge 👋 Tell me what your business needs — a website, a logo, marketing, bookkeeping, whatever — and I'll scope it out and get you a price.";
+  "Hi, I'm Forge 👋 Tell me what you want built — a website, an application, an AI agent or an automation — and I'll help turn it into a proper brief, work out which services fit, and tell you what it's likely to involve. I can't price a job myself; a person does that once the scope is clear.";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -45,8 +47,12 @@ function visitorId(): string {
 
 export function Forge() {
   const { user, session } = useAuth();
+  // The homepage's example prompts link here with ?prompt=…, so arriving
+  // from one lands with the question already typed rather than on an
+  // empty box the visitor has to re-type it into.
+  const [searchParams] = useSearchParams();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => searchParams.get("prompt") ?? "");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [needsHuman, setNeedsHuman] = useState(false);
@@ -139,7 +145,7 @@ export function Forge() {
         <Link
           to={user ? "/dashboard" : "/"}
           aria-label={user ? "Back to dashboard" : "Back to home"}
-          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-sm font-semibold text-fg-muted transition-colors hover:border-yellow-400/50 hover:text-fg sm:px-3.5"
+          className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 text-sm font-semibold text-fg-muted transition-colors hover:border-cyan-400/50 hover:text-fg sm:px-3.5"
         >
           <ArrowLeft className="h-4 w-4" />
           <span className="hidden sm:inline">{user ? "Dashboard" : "Home"}</span>
@@ -147,7 +153,7 @@ export function Forge() {
         <Link to="/" aria-label="Home" className="min-w-0 shrink-0">
           <Logo compact />
         </Link>
-        <span className="ml-auto flex items-center gap-1.5 rounded-full border border-yellow-400/40 bg-yellow-400/10 px-3 py-1.5 text-xs font-semibold text-yellow-400">
+        <span className="ml-auto flex items-center gap-1.5 rounded-full border border-cyan-400/40 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-400">
           <Sparkles className="h-3.5 w-3.5" />
           Forge
         </span>
@@ -160,7 +166,7 @@ export function Forge() {
               key={i}
               className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm whitespace-pre-wrap ${
                 m.role === "user"
-                  ? "self-end bg-yellow-400 text-void"
+                  ? "self-end bg-cyan-400 text-void"
                   : "self-start border border-border bg-surface text-fg"
               }`}
             >
@@ -179,10 +185,10 @@ export function Forge() {
               href={MANAGER_TELEGRAM_URL}
               target="_blank"
               rel="noopener"
-              className="self-start rounded-xl border border-yellow-400/30 bg-yellow-400/5 px-4 py-3 text-sm text-fg-muted hover:border-yellow-400/60"
+              className="self-start rounded-xl border border-cyan-400/30 bg-cyan-400/5 px-4 py-3 text-sm text-fg-muted hover:border-cyan-400/60"
             >
               This one needs a person —{" "}
-              <span className="font-semibold text-yellow-400">talk to a manager on Telegram →</span>
+              <span className="font-semibold text-cyan-400">talk to a manager on Telegram →</span>
             </a>
           )}
 
@@ -195,7 +201,7 @@ export function Forge() {
                   key={s}
                   type="button"
                   onClick={() => void send(s)}
-                  className="rounded-full border border-border bg-surface px-3.5 py-2 text-xs text-fg-muted transition-colors hover:border-yellow-400/50 hover:text-fg"
+                  className="rounded-full border border-border bg-surface px-3.5 py-2 text-xs text-fg-muted transition-colors hover:border-cyan-400/50 hover:text-fg"
                 >
                   {s}
                 </button>
@@ -219,13 +225,13 @@ export function Forge() {
             onChange={(e) => setInput(e.target.value)}
             disabled={sending}
             placeholder="Tell Forge what you need…"
-            className="min-w-0 flex-1 rounded-full border-2 border-border bg-surface px-4 py-2.5 text-sm text-fg placeholder:text-fg-faint focus:border-yellow-400 focus:outline-none disabled:opacity-60"
+            className="min-w-0 flex-1 rounded-full border-2 border-border bg-surface px-4 py-2.5 text-sm text-fg placeholder:text-fg-faint focus:border-cyan-400 focus:outline-none disabled:opacity-60"
           />
           <button
             type="submit"
             disabled={sending || !input.trim()}
             aria-label="Send"
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-yellow-400 text-void transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cyan-400 text-void transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Send className="h-4 w-4" />
           </button>

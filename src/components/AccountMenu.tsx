@@ -19,14 +19,14 @@ function SignedOutActions() {
       <Link
         to="/login"
         aria-label="Log in"
-        className="flex h-9 items-center gap-1.5 rounded-full border border-border px-2.5 text-sm font-semibold text-fg-muted transition-colors hover:border-yellow-400/50 hover:text-fg sm:px-4"
+        className="flex h-9 items-center gap-1.5 rounded-full border border-border px-2.5 text-sm font-semibold text-fg-muted transition-colors hover:border-cyan-400/50 hover:text-fg sm:px-4"
       >
         <LogIn className="h-4 w-4" />
         <span className="hidden sm:inline">Log in</span>
       </Link>
       <Link
         to="/signup"
-        className="flex h-9 items-center rounded-full bg-yellow-400 px-3.5 text-sm font-semibold text-void shadow-glow-yellow transition-transform hover:-translate-y-0.5 active:translate-y-0 sm:px-5"
+        className="flex h-9 items-center rounded-full bg-cyan-400 px-3.5 text-sm font-semibold text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5 active:translate-y-0 sm:px-5"
       >
         Get started
       </Link>
@@ -74,7 +74,7 @@ function SignedInMenu() {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Account"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-sm font-semibold text-fg transition-colors hover:border-yellow-400/50"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-sm font-semibold text-fg transition-colors hover:border-cyan-400/50"
       >
         {initial}
       </button>

@@ -19,6 +19,13 @@ const Dashboard = lazy(() => import("./pages/Dashboard").then((m) => ({ default:
 const Request = lazy(() => import("./pages/Request").then((m) => ({ default: m.Request })));
 const Projects = lazy(() => import("./pages/Projects").then((m) => ({ default: m.Projects })));
 const Forge = lazy(() => import("./pages/Forge").then((m) => ({ default: m.Forge })));
+const Services = lazy(() => import("./pages/Services").then((m) => ({ default: m.Services })));
+const ServiceDetail = lazy(() =>
+  import("./pages/ServiceDetail").then((m) => ({ default: m.ServiceDetail })),
+);
+const Packages = lazy(() => import("./pages/Packages").then((m) => ({ default: m.Packages })));
+const Terms = lazy(() => import("./pages/legal/Terms").then((m) => ({ default: m.Terms })));
+const Privacy = lazy(() => import("./pages/legal/Privacy").then((m) => ({ default: m.Privacy })));
 
 /**
  * Every page a client touches is now a React route.
@@ -43,6 +50,13 @@ export default function App() {
       <Suspense fallback={<div className="min-h-dvh bg-void" />}>
         <Routes>
           <Route path="/" element={<Landing />} />
+
+          {/* Prices are public. Only ordering needs an account. */}
+          <Route path="/services" element={<Services />} />
+          <Route path="/services/:id" element={<ServiceDetail />} />
+          <Route path="/packages" element={<Packages />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
 
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />

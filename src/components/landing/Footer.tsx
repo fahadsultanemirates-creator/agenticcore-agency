@@ -1,5 +1,6 @@
 import { Mail } from "lucide-react";
 import type { ComponentType } from "react";
+import { Link } from "react-router-dom";
 import { Logo } from "../Logo";
 import { FacebookIcon, InstagramIcon, XIcon, YouTubeIcon } from "../icons/SocialIcons";
 import { TelegramIcon } from "../icons/TelegramIcon";
@@ -14,13 +15,16 @@ const SOCIALS: { href: string; label: string; icon: ComponentType<{ className?: 
 ];
 
 const LEGAL = [
-  { href: "/terms.html", label: "Terms" },
-  { href: "/privacy.html", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
+  { href: "/privacy", label: "Privacy" },
 ];
 
+// The sister brands, described as what they actually are now. .biz was
+// labelled "marketing", which stopped being true when it was
+// repositioned around business operations.
 const ELSEWHERE = [
-  { href: "https://agenticcore.click", label: "agenticcore.click — the fast, self-serve one" },
-  { href: "https://agenticcore.biz", label: "agenticcore.biz — marketing" },
+  { href: "https://agenticcore.click", label: "agenticcore.click — fast, standardised digital tasks" },
+  { href: "https://agenticcore.biz", label: "agenticcore.biz — business setup and back-office" },
 ];
 
 export function Footer() {
@@ -29,17 +33,17 @@ export function Footer() {
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-10">
         <div className="flex w-full flex-col items-center justify-between gap-6 sm:flex-row sm:items-start">
           <div className="flex flex-col items-center gap-2 sm:items-start">
-            <Logo />
+            <Logo variant="lockup" />
             <p className="text-sm text-fg-faint">
-              The long-scope side of the AgenticCore family.
+              The technology-development side of the AgenticCore family.
             </p>
           </div>
 
           <nav className="flex items-center gap-6 text-sm text-fg-muted">
             {LEGAL.map((link) => (
-              <a key={link.href} href={link.href} className="transition-colors hover:text-fg">
+              <Link key={link.href} to={link.href} className="transition-colors hover:text-fg">
                 {link.label}
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
@@ -50,7 +54,7 @@ export function Footer() {
             <a
               href="mailto:hello@agenticcore.agency"
               aria-label="Email us"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-yellow-400 text-void transition-transform hover:-translate-y-0.5"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-cyan-400 text-void transition-transform hover:-translate-y-0.5"
             >
               <Mail className="h-5 w-5" />
             </a>
@@ -59,7 +63,7 @@ export function Footer() {
               target="_blank"
               rel="noreferrer"
               aria-label="Support on Telegram"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-yellow-400 text-void transition-transform hover:-translate-y-0.5"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-cyan-400 text-void transition-transform hover:-translate-y-0.5"
             >
               <TelegramIcon className="h-5 w-5" />
             </a>
@@ -76,7 +80,7 @@ export function Footer() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label={social.label}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-fg-muted transition-colors hover:border-yellow-400/50 hover:text-fg"
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-fg-muted transition-colors hover:border-cyan-400/50 hover:text-fg"
               >
                 <social.icon className="h-5 w-5" />
               </a>
