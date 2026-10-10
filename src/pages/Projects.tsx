@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { DashboardShell } from "../components/dashboard/DashboardShell";
 import { useAuth } from "../context/AuthContext";
+import { taskTypeLabel } from "../lib/pricing";
 import { shortDate } from "../lib/format";
 import { supabase } from "../lib/supabase";
 import { statusClass, statusLabel } from "../lib/status";
@@ -132,7 +133,12 @@ export function Projects() {
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-fg">
-                    {r.task_type || r.service_category}
+                    {/* Through taskTypeLabel, not raw. Requests placed since the
+                        catalogue restructure store a service id, so printing
+                        the column would show a customer "AG-01" where the
+                        service name belongs. Older rows hold the name and
+                        come back unchanged. */}
+                    {r.task_type ? taskTypeLabel(r.task_type) : r.service_category}
                   </p>
                   <p className="text-xs text-fg-faint">Submitted {shortDate(r.created_at)}</p>
                 </div>

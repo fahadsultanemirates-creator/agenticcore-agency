@@ -1,4 +1,4 @@
-import { categories, serviceById } from "../data/catalog";
+import { categories, serviceById } from "../data/catalog.ts";
 
 /**
  * The deposit due to start a job: 30%, the split the site promises.
