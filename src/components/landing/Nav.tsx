@@ -33,7 +33,7 @@ export function Nav() {
         scrolled || menuOpen ? "border-border" : "border-transparent"
       }`}
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-6 sm:py-4">
         <Link to="/" aria-label="AgenticCore Agency home" className="shrink-0">
           <Logo compact className="sm:hidden" />
           <Logo className="hidden sm:block" />
@@ -52,7 +52,7 @@ export function Nav() {
           ))}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           {/* The brief's primary header CTA, but only once there is
               genuinely room for it. At exactly 1280px -- where the six
               nav links first appear -- the links, this button and the

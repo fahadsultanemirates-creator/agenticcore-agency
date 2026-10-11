@@ -271,7 +271,12 @@ export function Request() {
                               {item.deliveryEstimate}
                             </span>
                           </span>
-                          <span className="shrink-0 text-sm font-semibold whitespace-nowrap text-cyan-400">
+                          {/* "From $49 per page or screen" is 196px of
+                              nowrap text. On a 320px phone that forced the
+                              whole row wider than the viewport, so the page
+                              scrolled sideways. It may wrap down there; it
+                              still never wraps once there is room. */}
+                          <span className="shrink-0 text-right text-sm font-semibold text-cyan-400 sm:whitespace-nowrap">
                             {formatPrice(item)}
                           </span>
                         </button>

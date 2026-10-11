@@ -1,7 +1,7 @@
 import { ArrowRight, Check, Clock, Info, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PublicShell } from "../components/PublicShell";
-import { formatPrice, packages, serviceById } from "../data/catalog";
+import { formatPrice, packageSavingUsd, packages, serviceById } from "../data/catalog";
 
 export function Packages() {
   return (
@@ -27,9 +27,22 @@ export function Packages() {
                   <h2 className="font-display text-2xl font-semibold text-fg">{pkg.name}</h2>
                   <p className="mt-1.5 max-w-lg text-sm text-fg-muted">{pkg.audience}</p>
                 </div>
-                <p className="font-display text-3xl font-semibold whitespace-nowrap text-cyan-400">
-                  {formatPrice(pkg)}
-                </p>
+                {/* A package price next to nothing else reads as a third
+                    arbitrary number: Website + Brand Launch is $189 while
+                    its two services bought separately are $198. The saving
+                    is derived, and a package that saves nothing says
+                    nothing -- Website Starter contains one service at that
+                    service's own price. */}
+                <div className="text-right">
+                  <p className="font-display text-3xl font-semibold whitespace-nowrap text-cyan-400">
+                    {formatPrice(pkg)}
+                  </p>
+                  {packageSavingUsd(pkg) > 0 ? (
+                    <p className="mt-1 text-xs font-semibold whitespace-nowrap text-fg-muted">
+                      Package price — save ${packageSavingUsd(pkg)}
+                    </p>
+                  ) : null}
+                </div>
               </div>
 
               <div className="mt-6 grid gap-5 sm:grid-cols-2">

@@ -770,7 +770,7 @@ export const packages: Package[] = [
     included: [
       "Everything in Website Starter",
       "Coordinated basic brand identity kit",
-      "Logo concept with standard exports",
+      "Logo in two concept directions, with standard exports",
       "Colour palette",
       "Typography recommendations",
       "Basic brand usage guidance",
@@ -945,4 +945,25 @@ export function heroFloorUsd(serviceId: string): number {
     throw new Error(`the hero quotes ${serviceId}, which is not an active service`);
   }
   return service.priceUsd;
+}
+
+/**
+ * What a package saves against buying its parts separately.
+ *
+ * Website + Brand Launch is $189 while AG-02 + AG-09 bought individually
+ * are $198, so the package looked like an arbitrary third price rather
+ * than a discount -- and a reader comparing the two could reasonably
+ * wonder which number was wrong.
+ *
+ * Returns 0 when there is nothing to claim. Website Starter contains only
+ * AG-02 and is priced at exactly AG-02, so a blanket "save" badge would
+ * have been a saving of zero dollars announced as a deal.
+ */
+export function packageSavingUsd(bundle: Package): number {
+  const parts = bundle.serviceIds
+    .map((id) => serviceById(id))
+    .filter((s): s is Service => Boolean(s));
+  if (parts.length !== bundle.serviceIds.length) return 0;
+  const sum = parts.reduce((total, s) => total + s.priceUsd, 0);
+  return Math.max(0, sum - bundle.priceUsd);
 }

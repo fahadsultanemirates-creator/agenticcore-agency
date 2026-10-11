@@ -16,8 +16,6 @@ import { supabase } from "../../lib/supabase";
 // Ported from public/usdt-payment.js, which is deleted with this change.
 
 const USDT_BEP20_ADDRESS = "0x62Ad7D55fbc8A8591109D72b67Ec63aa1EE196bC";
-const AC_TOKEN_CONTRACT_ADDRESS = "0xe9568888a0bc317519957047cf736e134B097768";
-const AC_TOKEN_DISCOUNT_PCT = 15;
 // One handle for the whole brand; see src/data/contact.ts.
 const SUPPORT_TELEGRAM_URL = TELEGRAM_URL;
 
@@ -71,55 +69,6 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
       {copied ? <Check className="h-3.5 w-3.5 text-cyan-400" /> : <Copy className="h-3.5 w-3.5" />}
       {copied ? "Copied" : label}
     </button>
-  );
-}
-
-/**
- * The AC token option, which stays manual -- honestly.
- *
- * The chain watcher matches transfers of the USDT contract and nothing
- * else, so an AC payment genuinely does need a human to look at it.
- * Saying "verified manually" about the USDT path too, now that it is
- * automatic, would be the sort of stale sentence nobody notices is a lie.
- */
-function AcTokenOption({ requestId, depositUsd }: { requestId: string; depositUsd: number }) {
-  const acAmount = Math.round(depositUsd * (1 - AC_TOKEN_DISCOUNT_PCT / 100) * 100) / 100;
-  return (
-    <div className="mt-5 border-t border-border pt-5">
-      <p className="text-xs font-semibold tracking-wide text-fg-muted uppercase">
-        Or pay in AC token — {AC_TOKEN_DISCOUNT_PCT}% off
-      </p>
-      <p className="mt-1.5 text-sm text-fg-muted">
-        {money(acAmount)} of AC token, to the same address. AC payments are still checked by hand:
-        send it, then message us on{" "}
-        <a
-          href={SUPPORT_TELEGRAM_URL}
-          target="_blank"
-          rel="noopener"
-          className="font-semibold text-cyan-400 hover:underline"
-        >
-          Telegram
-        </a>{" "}
-        with request <code className="text-xs text-fg">{requestId}</code> and your transaction hash.
-      </p>
-      <div className="mt-2 flex items-center gap-2">
-        <code className="min-w-0 flex-1 truncate rounded-lg bg-void px-3 py-2 font-mono text-xs text-fg">
-          {USDT_BEP20_ADDRESS}
-        </code>
-        <CopyButton text={USDT_BEP20_ADDRESS} />
-      </div>
-      <p className="mt-2 text-xs text-fg-faint">
-        AC token contract:{" "}
-        <a
-          href={`https://bscscan.com/token/${AC_TOKEN_CONTRACT_ADDRESS}`}
-          target="_blank"
-          rel="noopener"
-          className="hover:underline"
-        >
-          <code>{AC_TOKEN_CONTRACT_ADDRESS}</code>
-        </a>
-      </p>
-    </div>
   );
 }
 
@@ -288,7 +237,6 @@ export function UsdtPayment({ requestId, amountDue }: { requestId: string; amoun
     return (
       <>
         <ManualFallback requestId={requestId} amountDue={amountDue} reason={failure} />
-        <AcTokenOption requestId={requestId} depositUsd={amountDue} />
       </>
     );
   }
@@ -360,7 +308,6 @@ export function UsdtPayment({ requestId, amountDue }: { requestId: string; amoun
         way.
       </p>
 
-      <AcTokenOption requestId={invoice.requestId} depositUsd={invoice.baseUsd} />
     </div>
   );
 }

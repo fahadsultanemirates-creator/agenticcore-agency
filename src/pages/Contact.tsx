@@ -1,7 +1,7 @@
-import { ArrowRight, Mail, MessageCircle, Send } from "lucide-react";
+import { ArrowRight, Mail, MessageCircle, Phone, Send } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PublicShell } from "../components/PublicShell";
-import { SUPPORT_EMAIL, TELEGRAM_HANDLE, TELEGRAM_URL } from "../data/contact";
+import { SUPPORT_EMAIL, TELEGRAM_HANDLE, TELEGRAM_URL, whatsAppUrl } from "../data/contact";
 
 /**
  * There was no way to reach a person from this site that did not involve
@@ -31,6 +31,20 @@ export function Contact() {
         </div>
 
         <div className="mt-10 grid max-w-3xl gap-4 sm:grid-cols-2">
+          {/* Hidden until the owner supplies a number. A placeholder on a
+              contact page is worse than no button, because somebody will
+              dial it. Set WHATSAPP_NUMBER in src/data/contact.ts and this
+              appears -- nothing else needs changing. */}
+          {whatsAppUrl() ? (
+            <Channel
+              icon={<Phone className="h-5 w-5" aria-hidden />}
+              title="WhatsApp"
+              detail="Message us"
+              body="Same team as Telegram, if WhatsApp is easier for you."
+              href={whatsAppUrl() as string}
+              external
+            />
+          ) : null}
           <Channel
             icon={<Send className="h-5 w-5" aria-hidden />}
             title="Telegram"

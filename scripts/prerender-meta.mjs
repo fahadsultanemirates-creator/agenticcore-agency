@@ -62,6 +62,12 @@ const pages = [
       "Describe the problem in your own words and Forge works out which services solve it, what it costs and how long it takes.",
   },
   {
+    path: "contact",
+    title: "Contact",
+    description:
+      "Telegram, email, Forge, or start a project — no account needed to ask a question first.",
+  },
+  {
     path: "terms",
     title: "Terms of Service",
     description:
