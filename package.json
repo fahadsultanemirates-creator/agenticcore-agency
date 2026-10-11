@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "generate:bot-catalog": "node --experimental-strip-types scripts/generate-bot-catalog.mjs",
     "prebuild": "npm run generate:bot-catalog",
-    "test": "node --experimental-strip-types src/data/catalog.test.ts && node --experimental-strip-types src/lib/pricing.test.ts && node --experimental-strip-types supabase/functions/_shared/pricing.test.ts && node --experimental-strip-types supabase/functions/_shared/usdtAmount.test.ts && node --experimental-strip-types supabase/functions/_shared/usdtChain.test.ts"
+    "test": "node --experimental-strip-types src/data/catalog.test.ts && node --experimental-strip-types src/lib/pricing.test.ts && node --experimental-strip-types supabase/functions/_shared/pricing.test.ts && node --experimental-strip-types supabase/functions/_shared/usdtAmount.test.ts && node --experimental-strip-types supabase/functions/_shared/usdtChain.test.ts && node --experimental-strip-types src/lib/requestDraft.test.ts && node --experimental-strip-types src/data/contact.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.116.0",

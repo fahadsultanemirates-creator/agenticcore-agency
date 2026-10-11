@@ -1,5 +1,6 @@
 import { AlertTriangle, Check, Copy, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { TELEGRAM_URL } from "../../data/contact";
 import { money } from "../../lib/format";
 import { supabase } from "../../lib/supabase";
 
@@ -17,7 +18,8 @@ import { supabase } from "../../lib/supabase";
 const USDT_BEP20_ADDRESS = "0x62Ad7D55fbc8A8591109D72b67Ec63aa1EE196bC";
 const AC_TOKEN_CONTRACT_ADDRESS = "0xe9568888a0bc317519957047cf736e134B097768";
 const AC_TOKEN_DISCOUNT_PCT = 15;
-const SUPPORT_TELEGRAM_URL = "https://t.me/agenticcore_support";
+// One handle for the whole brand; see src/data/contact.ts.
+const SUPPORT_TELEGRAM_URL = TELEGRAM_URL;
 
 // Five seconds. The point of watching the chain ourselves is that
 // confirmation takes under a minute; a lazy poll would throw that away at
