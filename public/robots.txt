@@ -1,0 +1,24 @@
+# Crawlable: the catalogue, the packages, Forge, the legal pages.
+# Not crawlable: anything behind a login (nothing useful there without a
+# session), and the legacy static pages still in public/ that predate the
+# restructure and describe retired services.
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /projects
+Disallow: /orders
+Disallow: /invoices
+Disallow: /messages
+Disallow: /files
+Disallow: /account
+Disallow: /login
+Disallow: /signup
+Disallow: /reset
+Disallow: /reset-password
+Disallow: /check-email
+Disallow: /admin.html
+Disallow: /ai-trading.html
+Disallow: /business-pool.html
+Disallow: /project-view.html
+
+Sitemap: https://agenticcore.agency/sitemap.xml
