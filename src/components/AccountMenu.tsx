@@ -13,7 +13,7 @@ export function AccountMenu() {
 
 function SignedOutActions() {
   return (
-    <div className="flex shrink-0 items-center gap-2">
+    <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
       {/* The label collapses to the icon on a phone so the header never
           gets crowded next to the primary button. */}
       <Link
@@ -24,11 +24,16 @@ function SignedOutActions() {
         <LogIn className="h-4 w-4" />
         <span className="hidden sm:inline">Log in</span>
       </Link>
+      {/* "Get started" is 104px and will not shrink, which is what pushed
+          the header past the viewport at 320-360px. A primary CTA should
+          not collapse to a bare icon, so it keeps a word -- just a shorter
+          one on the narrowest screens. */}
       <Link
         to="/signup"
-        className="flex h-9 items-center rounded-full bg-cyan-400 px-3.5 text-sm font-semibold text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5 active:translate-y-0 sm:px-5"
+        className="flex h-9 items-center rounded-full bg-cyan-400 px-3 text-sm font-semibold text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5 active:translate-y-0 sm:px-5"
       >
-        Get started
+        <span className="sm:hidden">Sign up</span>
+        <span className="hidden sm:inline">Get started</span>
       </Link>
     </div>
   );

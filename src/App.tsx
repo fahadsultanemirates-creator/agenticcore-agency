@@ -34,6 +34,7 @@ const ServiceDetail = lazy(() =>
 const Packages = lazy(() => import("./pages/Packages").then((m) => ({ default: m.Packages })));
 const Terms = lazy(() => import("./pages/legal/Terms").then((m) => ({ default: m.Terms })));
 const Privacy = lazy(() => import("./pages/legal/Privacy").then((m) => ({ default: m.Privacy })));
+const Contact = lazy(() => import("./pages/Contact").then((m) => ({ default: m.Contact })));
 
 /**
  * Every page a client touches is now a React route.
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/packages" element={<Packages />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/contact" element={<Contact />} />
 
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
@@ -83,14 +85,11 @@ export default function App() {
               </RequireAuth>
             }
           />
-          <Route
-            path="/request"
-            element={
-              <RequireAuth>
-                <Request />
-              </RequireAuth>
-            }
-          />
+          {/* Public on purpose. This is where "Start Your Project" lands and
+              where paid traffic arrives; gating it meant a cold visitor met a
+              login form before seeing anything they could buy. Sign-up now
+              happens at submit, and the brief survives the detour. */}
+          <Route path="/request" element={<Request />} />
           <Route
             path="/projects"
             element={

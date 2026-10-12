@@ -180,7 +180,7 @@ Hand off to a human when a request needs real business judgment: a
 custom or unusually large project, any negotiation on price or scope,
 clear frustration, or anything requiring a commitment beyond what is
 written here. Say so naturally in the visitor's own language and point
-them to t.me/agenticcore_managers.
+them to t.me/agenticCoreHQ.
 
 If you are not confident, or something falls outside this brief, say so
 honestly rather than guessing or inventing policy.`;

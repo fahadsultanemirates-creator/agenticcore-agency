@@ -8,6 +8,7 @@
 
 import assert from "node:assert/strict";
 import process from "node:process";
+import { readFileSync } from "node:fs";
 
 import {
   activeServices,
@@ -17,7 +18,10 @@ import {
   categories,
   featuredServices,
   formatPrice,
+  heroFloors,
+  heroFloorUsd,
   needsQuote,
+  packageSavingUsd,
   packages,
   serviceById,
   services,
@@ -280,6 +284,84 @@ test("MCP is not sold as a multi-agent framework", () => {
   // AG-16 has bought the wrong thing by several hundred dollars.
   const mcp = serviceById("AG-18")!;
   assert.match(mcp.scopeLimits.join(" "), /not itself a multi-agent framework/i);
+});
+
+test("the hero's price floors name the services they actually come from", () => {
+  // The hero read "Professional websites from $49" for weeks. $49 is AG-01,
+  // which is a single landing page; the cheapest real website is AG-02 at
+  // $149. Pinning the numbers alone would not have caught that -- $49 was a
+  // true price, attached to the wrong noun -- so this also asserts that each
+  // label matches the name of the service it quotes.
+  const quoted = heroFloors.map((f) => [f.label, heroFloorUsd(f.serviceId)]);
+  assert.deepEqual(quoted, [
+    ["Landing pages", 49],
+    ["websites", 149],
+    ["custom AI agents", 149],
+  ]);
+
+  const nounFor: Record<string, RegExp> = {
+    "Landing pages": /landing page/i,
+    websites: /website/i,
+    "custom AI agents": /ai agent/i,
+  };
+  for (const floor of heroFloors) {
+    const service = serviceById(floor.serviceId);
+    assert.ok(service, `${floor.serviceId} is quoted by the hero but not in the catalogue`);
+    assert.match(
+      service.name,
+      nounFor[floor.label],
+      `the hero calls ${floor.serviceId} "${floor.label}", but it is "${service.name}"`,
+    );
+  }
+});
+
+
+test("a package never costs more than its parts, and says what it saves", () => {
+  // $189 for AG-02 + AG-09, which are $198 apart, looked like a third
+  // arbitrary price rather than a discount.
+  for (const bundle of packages) {
+    const parts = bundle.serviceIds.map((id) => serviceById(id));
+    assert.ok(parts.every(Boolean), `${bundle.id} references a service that does not exist`);
+    const sum = parts.reduce((total, s) => total + s!.priceUsd, 0);
+    assert.ok(
+      bundle.priceUsd <= sum,
+      `${bundle.id} costs $${bundle.priceUsd} but its parts total $${sum}`,
+    );
+    assert.equal(
+      packageSavingUsd(bundle),
+      sum - bundle.priceUsd,
+      `${bundle.id} reports the wrong saving`,
+    );
+  }
+});
+
+test("a package that saves nothing claims nothing", () => {
+  // Website Starter is one service at that service's price. A "save $0"
+  // badge is worse than no badge.
+  const starter = packages.find((p) => p.id === "PKG-WEBSITE-STARTER");
+  assert.ok(starter);
+  assert.equal(packageSavingUsd(starter), 0);
+
+  const page = readFileSync(new URL("../pages/Packages.tsx", import.meta.url), "utf8");
+  assert.ok(
+    page.includes("packageSavingUsd(pkg) > 0"),
+    "Packages.tsx shows a saving unconditionally",
+  );
+});
+
+test("the brand package describes the logo the way AG-09 does", () => {
+  // The package said "Logo concept" (singular) while AG-09 promises two
+  // concept directions -- the same deliverable, described as less.
+  const brand = packages.find((p) => p.id === "PKG-WEBSITE-BRAND");
+  const ag09 = serviceById("AG-09");
+  assert.ok(brand && ag09);
+  const logoLine = brand.included.find((i) => /logo/i.test(i));
+  assert.ok(logoLine, "the brand package no longer mentions a logo");
+  assert.match(logoLine, /two concept directions/i, `package says "${logoLine}"`);
+  assert.ok(
+    ag09.deliverables.some((d) => /two initial concept directions/i.test(d)),
+    "AG-09 no longer promises two directions — the package now over-promises",
+  );
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

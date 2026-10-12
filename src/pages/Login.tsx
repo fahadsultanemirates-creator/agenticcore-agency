@@ -45,7 +45,14 @@ export function Login() {
       footer={
         <>
           Don't have an account?{" "}
-          <Link to="/signup" className="font-semibold text-cyan-400 hover:underline">
+          {/* Symmetrical with Signup's "Log in" link: the return path has to
+              survive a bounce between the two, or a part-written request is
+              lost by going the long way round. */}
+          <Link
+            to="/signup"
+            state={{ from }}
+            className="font-semibold text-cyan-400 hover:underline"
+          >
             Create one
           </Link>
         </>

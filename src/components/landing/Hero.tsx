@@ -1,6 +1,8 @@
 import { ArrowRight, Cpu, Sparkles } from "lucide-react";
+import { Fragment } from "react";
 import { Link } from "react-router-dom";
 import dashboardPreview from "../../assets/dashboard-preview.webp";
+import { heroFloors, heroFloorUsd } from "../../data/catalog.ts";
 
 export function Hero() {
   return (
@@ -46,11 +48,19 @@ export function Hero() {
           </Link>
         </div>
 
-        {/* Two real catalogue floors, named because "affordable" on its own
-            is not a price. Both are asserted in catalog.test.ts. */}
+        {/* Real catalogue floors, each next to the service it comes from,
+            because "affordable" on its own is not a price -- and because a
+            floor typed into the copy by hand drifts. catalog.test.ts asserts
+            both the numbers and that each label matches its service. */}
         <p className="animate-fade-up mt-5 text-sm text-fg-muted">
-          Professional websites from <span className="font-semibold text-fg">$49</span>. Custom AI
-          agents from <span className="font-semibold text-fg">$149</span>.
+          {heroFloors.map((floor, i) => (
+            <Fragment key={floor.serviceId}>
+              {i > 0 && ", "}
+              {floor.label} from{" "}
+              <span className="font-semibold text-fg">${heroFloorUsd(floor.serviceId)}</span>
+            </Fragment>
+          ))}
+          .
         </p>
 
         {/* The owner's cyan dashboard artwork. Wider than the old square
