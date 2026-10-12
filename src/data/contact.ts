@@ -1,37 +1,60 @@
 /**
- * Where customers reach us, in one place.
+ * Support contacts, in one place.
  *
- * This site shipped three different Telegram handles at once --
- * agenticcore_support in the footer and on the payment screen,
- * agenticcore_managers on the Forge page, agenticCoreHQ on the legacy
- * static pages -- so which business a customer thought they were talking to
- * depended on which page they happened to click from. .biz was worse: its
- * footer linked to AgenticCoreAgency, the wrong brand entirely.
+ * These are SUPPORT channels only. They are deliberately NOT the ordering
+ * bot: .click's hero links to t.me/AgenticcoreClickManagerbot, which
+ * creates projects and places orders. That is a different job with a
+ * different destination, and routing it through here would send someone
+ * with a billing question into an order flow.
  *
- * One handle, declared once. contact.test.ts fails if a t.me URL is written
- * into a component again.
+ * All three sites use the same two accounts, so a customer who finds one
+ * brand and asks about another reaches the same people.
  */
-export const TELEGRAM_HANDLE = "agenticCoreHQ";
 
+/** Telegram support account. Changed from agenticCoreHQ, per the owner. */
+export const TELEGRAM_HANDLE = "AgenticCorebiz";
 export const TELEGRAM_URL = `https://t.me/${TELEGRAM_HANDLE}`;
 
-export const SUPPORT_EMAIL = "hello@agenticcore.agency";
+/**
+ * WhatsApp support account.
+ *
+ * The number is what the link uses. WhatsApp's own click-to-chat
+ * documentation describes exactly one form, https://wa.me/<number> with
+ * the number in international format and no plus, spaces or leading
+ * zeroes -- so that is the form a stranger's phone is guaranteed to
+ * open. The username is kept because it is the same account and is what
+ * a person would search for inside WhatsApp, but it is deliberately not
+ * what the button points at: the username link form appears in no
+ * WhatsApp documentation, and wa.me is unreachable from the build
+ * environment, so it could not be verified either way.
+ *
+ * Clear WHATSAPP_PHONE to fall back to the username link.
+ */
+export const WHATSAPP_USERNAME: string | null = "agenticcore.biz";
+export const WHATSAPP_PHONE: string | null = "971585227837";
+
+/** The link to open a WhatsApp chat, or null if neither is configured. */
+export function whatsAppUrl(): string | null {
+  if (WHATSAPP_PHONE) return `https://wa.me/${WHATSAPP_PHONE}`;
+  if (WHATSAPP_USERNAME) return `https://wa.me/${WHATSAPP_USERNAME}`;
+  return null;
+}
 
 /**
- * WhatsApp, once there is a number.
+ * How the WhatsApp account is shown to a reader.
  *
- * Deliberately null. The owner asked for a WhatsApp button that stays
- * hidden until they supply the number, and a placeholder number on a
- * contact page is worse than no button: somebody will dial it.
- *
- * Set this to the number in international format with no spaces or plus
- * sign -- wa.me wants "971501234567" -- and the button appears everywhere
- * it is used. Nothing else needs changing.
+ * Shows whatever the link actually opens, so the two cannot disagree --
+ * and a number is the more useful of the two on a contact page, because
+ * it can be saved as a contact rather than only tapped.
  */
-export const WHATSAPP_NUMBER: string | null = null;
-
-/** The wa.me link, or null while there is no number. */
-export function whatsAppUrl(): string | null {
-  if (!WHATSAPP_NUMBER) return null;
-  return `https://wa.me/${WHATSAPP_NUMBER}`;
+export function whatsAppLabel(): string | null {
+  if (WHATSAPP_PHONE) {
+    const d = WHATSAPP_PHONE;
+    // +971 58 522 7837 -- grouped for reading, never for the link.
+    return d.length === 12 ? `+${d.slice(0, 3)} ${d.slice(3, 5)} ${d.slice(5, 8)} ${d.slice(8)}` : `+${d}`;
+  }
+  if (WHATSAPP_USERNAME) return `@${WHATSAPP_USERNAME}`;
+  return null;
 }
+
+export const SUPPORT_EMAIL = "hello@agenticcore.agency";

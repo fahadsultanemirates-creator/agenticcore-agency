@@ -4,6 +4,7 @@ import { RequireAuth } from "./components/auth/RequireAuth";
 import { AuthProvider } from "./context/AuthContext";
 import { Landing } from "./pages/Landing";
 import { NotFound } from "./pages/NotFound";
+import { ScrollToHash } from "./components/ScrollToHash";
 
 // The landing page is the sales page, and most of its visitors never sign
 // in. Bundling the dashboard, the request wizard, the projects page and
@@ -57,6 +58,7 @@ export default function App() {
       {/* Blank rather than a spinner: these chunks arrive in well under
           the time it takes a spinner to stop looking like a fault. */}
       <Suspense fallback={<div className="min-h-dvh bg-void" />}>
+        <ScrollToHash />
         <Routes>
           <Route path="/" element={<Landing />} />
 
