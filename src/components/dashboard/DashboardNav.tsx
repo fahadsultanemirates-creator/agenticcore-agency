@@ -19,7 +19,18 @@ import { NavLink } from "react-router-dom";
  * page and it ate a third of a phone screen before any content drew,
  * which is why it was removed. Ten destinations still need to be
  * reachable from each other though, so they sit in a strip under the
- * header that scrolls sideways on a phone and fits on one line above it.
+ * header.
+ *
+ * "Fits on one line above a phone" was an assumption, and it was wrong at
+ * every size. The strip lives inside a max-w-6xl column, so its container
+ * is 1152px no matter how wide the display is, while ten items come to
+ * 1432px. It overflowed by 328px at 1280px AND at 1920px, which left
+ * Files & Deliverables and Account Settings permanently behind a sideways
+ * scrollbar -- two of the ten areas, unreachable unless you knew to drag.
+ *
+ * So it wraps once there is more than one row's worth of room, and only
+ * scrolls sideways on a phone, where wrapping ten items would push the
+ * page content off the screen instead.
  *
  * Three of these are the public pages — services, packages and Forge.
  * They are listed because a client looking for "where do I order" should
@@ -46,10 +57,11 @@ export function DashboardNav({ unreadMessages = 0 }: { unreadMessages?: number }
     <nav
       aria-label="Dashboard sections"
       // -mx-4 plus px-4 lets the strip bleed to the screen edge on a
-      // phone, so the last item does not look clipped mid-word.
-      className="-mx-4 mb-2 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:px-6"
+      // phone, so the last item does not look clipped mid-word. Above sm
+      // it stops scrolling and wraps instead, so nothing is hidden.
+      className="-mx-4 mb-2 overflow-x-auto border-b border-border px-4 sm:-mx-6 sm:overflow-x-visible sm:px-6"
     >
-      <ul className="flex min-w-max items-center gap-1 py-2">
+      <ul className="flex min-w-max items-center gap-1 py-2 sm:min-w-0 sm:flex-wrap">
         {AREAS.map((area) => (
           <li key={area.to}>
             <NavLink

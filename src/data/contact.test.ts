@@ -42,6 +42,7 @@ function test(name: string, fn: () => void): void {
 
 const SRC = new URL("..", import.meta.url).pathname;
 const FUNCTIONS = new URL("../../supabase/functions", import.meta.url).pathname;
+const PUBLIC = new URL("../../public", import.meta.url).pathname;
 const ORDER_BOT = "AgenticcoreClickManagerbot";
 
 function sourceFiles(dir: string, out: string[] = []): string[] {
@@ -59,6 +60,30 @@ function sourceFiles(dir: string, out: string[] = []): string[] {
   return out;
 }
 
+/**
+ * The legacy pages in public/ that Netlify still serves as real files.
+ *
+ * sourceFiles() only takes .ts/.tsx under src/ and supabase/functions, so
+ * these were outside every scan -- which is how t.me/agenticCoreHQ sat in
+ * two live footers through two renames of the handle. A matching file
+ * beats the SPA catch-all on Netlify, so these are not dead weight: they
+ * are the page a visitor actually gets.
+ */
+function staticPages(dir: string, out: string[] = []): string[] {
+  let entries: string[];
+  try {
+    entries = readdirSync(dir);
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) staticPages(full, out);
+    else if (full.endsWith(".html")) out.push(full);
+  }
+  return out;
+}
+
 /** Code with comments and imports stripped -- both name what they ban. */
 function code(text: string): string {
   return text
@@ -69,6 +94,7 @@ function code(text: string): string {
 }
 
 const FILES = [...sourceFiles(SRC), ...sourceFiles(FUNCTIONS)];
+const PAGES = staticPages(PUBLIC);
 
 test("the scan reads this repo", () => {
   assert.ok(FILES.length > 10, `only ${FILES.length} files found — the walk is broken`);
@@ -156,6 +182,23 @@ test("the ordering bot is never used as a support contact", () => {
       `${file.replace(SRC, "src/")} labels the ordering bot as support`,
     );
   }
+});
+
+test("the scan reads the legacy static pages", () => {
+  assert.ok(PAGES.length > 0, `no .html found under public/ — the walk is broken`);
+});
+
+test("no legacy static page links a stale Telegram handle", () => {
+  const offenders: string[] = [];
+  for (const file of PAGES) {
+    // HTML comments, not JS ones -- code() would leave these intact.
+    const body = readFileSync(file, "utf8").replace(/<!--[\s\S]*?-->/g, " ");
+    for (const match of body.matchAll(/t\.me\/([A-Za-z0-9_]+)/g)) {
+      if (match[1] === TELEGRAM_HANDLE || match[1] === ORDER_BOT) continue;
+      offenders.push(`public/${file.slice(PUBLIC.length + 1)} → t.me/${match[1]}`);
+    }
+  }
+  assert.deepEqual(offenders, []);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
