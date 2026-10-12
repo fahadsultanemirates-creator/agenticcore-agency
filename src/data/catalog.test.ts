@@ -364,5 +364,50 @@ test("the brand package describes the logo the way AG-09 does", () => {
   );
 });
 
+test("a service id resolves whatever case the link used", () => {
+  // /services/ag-01 returned 200 and rendered the not-found page:
+  // the static file at /services/AG-01/ did not match, the SPA
+  // catch-all served the app, and an exact === lookup found nothing.
+  // Every service page broke that way for any lowercased link.
+  for (const service of activeServices) {
+    for (const spelling of [
+      service.id,
+      service.id.toLowerCase(),
+      service.id.toUpperCase(),
+      ` ${service.id} `,
+    ]) {
+      const found = serviceById(spelling);
+      assert.ok(found, `serviceById(${JSON.stringify(spelling)}) found nothing`);
+      assert.equal(found.id, service.id, `${spelling} resolved to the wrong service`);
+    }
+  }
+});
+
+test("a lenient lookup still does not invent a match", () => {
+  for (const nonsense of ["", "   ", "AG-99", "AG", "not-an-id", "AG-0"]) {
+    assert.equal(serviceById(nonsense), undefined, `serviceById(${JSON.stringify(nonsense)}) matched something`);
+  }
+});
+
+test("the detail page sends a non-canonical spelling to the canonical one", () => {
+  // Lenient lookup must not mean two indexable URLs for one service.
+  const page = readFileSync(new URL("../pages/ServiceDetail.tsx", import.meta.url), "utf8");
+  assert.ok(page.includes("Navigate"), "ServiceDetail does not redirect at all");
+  assert.match(
+    page,
+    /id !== service\.id/,
+    "ServiceDetail does not compare the URL spelling against the canonical id",
+  );
+});
+
+test("every route that links to a #hash has something to scroll to", () => {
+  // "See full details" changed the URL, rendered the right page and left
+  // the viewport where it was -- all three buttons landed on the same
+  // spot, none of them the package clicked. ScrollToHash fixes it, so
+  // this asserts it is actually mounted.
+  const app = readFileSync(new URL("../App.tsx", import.meta.url), "utf8");
+  assert.ok(app.includes("<ScrollToHash />"), "ScrollToHash is not mounted in App.tsx");
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

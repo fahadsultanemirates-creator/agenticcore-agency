@@ -901,12 +901,27 @@ export function servicesIn(category: ServiceCategoryId): Service[] {
 }
 
 /** Active services only. An archived id returns undefined on purpose. */
+/**
+ * A service by id, matched without regard to case.
+ *
+ * It used to be an exact === comparison, which meant /services/ag-01
+ * returned HTTP 200 and then rendered the not-found page: the static
+ * file at /services/AG-01/ did not match, the SPA catch-all served the
+ * app, and this lookup found nothing. Every service page broke that way
+ * for any link that had been lowercased -- by a person typing it, a
+ * campaign tool, or a crawler normalising URLs.
+ *
+ * Being lenient here is right; ServiceDetail still redirects to the
+ * canonical casing so there is only ever one URL in an index.
+ */
 export function serviceById(id: string): Service | undefined {
-  return activeServices.find((s) => s.id === id);
+  const wanted = id.trim().toLowerCase();
+  return activeServices.find((s) => s.id.toLowerCase() === wanted);
 }
 
 export function packageById(id: string): Package | undefined {
-  return packages.find((p) => p.id === id);
+  const wanted = id.trim().toLowerCase();
+  return packages.find((p) => p.id.toLowerCase() === wanted);
 }
 
 export function archivedById(id: string) {

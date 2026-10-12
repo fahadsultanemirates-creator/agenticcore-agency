@@ -1,5 +1,5 @@
 import { AlertTriangle, ArrowLeft, ArrowRight, ArrowUpRight, Check, Clock, Info, X } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, Navigate, useParams } from "react-router-dom";
 import { PublicShell } from "../components/PublicShell";
 import {
   archivedById,
@@ -25,6 +25,11 @@ export function ServiceDetail() {
   // links are in people's inboxes and in search results.
   if (!service && archived) return <Retired entry={archived} />;
   if (!service) return <NotFound />;
+
+  // The lookup accepts any casing so a lowercased link still resolves,
+  // but only one spelling should ever be indexed or shared. Anything
+  // else redirects to it.
+  if (id !== service.id) return <Navigate to={`/services/${service.id}`} replace />;
 
   const category = categories.find((c) => c.id === service.category);
   const inPackages = packages.filter((p) => p.serviceIds.includes(service.id));
