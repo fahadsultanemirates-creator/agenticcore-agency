@@ -154,6 +154,7 @@ for (const required of ["<title>", 'property="og:title"', 'rel="canonical"']) {
 }
 
 let written = 0;
+let aliases = 0;
 for (const page of pages) {
   const url = `${ORIGIN}/${page.path}`;
   const fullTitle = `${page.title} | ${BRAND}`;
@@ -216,6 +217,25 @@ for (const page of pages) {
   mkdirSync(dirname(out), { recursive: true });
   writeFileSync(out, html);
   written++;
+
+  // Also publish the lowercase spelling of the path, where it differs.
+  //
+  // Service ids are uppercase (AG-01), so /services/ag-01 matched no file
+  // and fell through to the SPA catch-all. A human still gets there now
+  // that the lookup is case-insensitive -- but a social crawler does not
+  // run JavaScript, so it read the catch-all's HTML and took the
+  // HOMEPAGE's title and description for a service link. The preview was
+  // wrong even though the page worked.
+  //
+  // The alias carries a canonical pointing at the uppercase URL, so the
+  // two spellings are one page as far as an index is concerned.
+  const lower = page.path.toLowerCase();
+  if (lower !== page.path) {
+    const aliasOut = join(DIST, lower, "index.html");
+    mkdirSync(dirname(aliasOut), { recursive: true });
+    writeFileSync(aliasOut, html);
+    aliases++;
+  }
 }
 
 // A sitemap costs nothing now that the list of real URLs exists here.
@@ -232,4 +252,4 @@ writeFileSync(
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${sitemap}\n</urlset>\n`,
 );
 
-console.log(`prerender: ${written} routes given their own preview, sitemap.xml written`);
+console.log(`prerender: ${written} routes (+${aliases} lowercase aliases) given their own preview, sitemap.xml written`);
