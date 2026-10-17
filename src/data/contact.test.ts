@@ -204,5 +204,41 @@ test("no legacy static page links a stale Telegram handle", () => {
   assert.deepEqual(offenders, []);
 });
 
+test("the functions' copy of the support details matches this one", () => {
+  // supabase/functions deploys separately and cannot import this file,
+  // so _shared/support.ts restates the three channels as literals. That
+  // is the same arrangement that let t.me/agenticCoreHQ sit in five live
+  // footers through two renames, so the copy is checked rather than
+  // trusted.
+  const support = readFileSync(`${FUNCTIONS}/_shared/support.ts`, "utf8");
+
+  const literal = (name: string): string => {
+    const match = new RegExp(`export const ${name} = '([^']*)'`).exec(support);
+    assert.ok(match, `${name} not found in _shared/support.ts`);
+    return match[1];
+  };
+
+  assert.equal(literal("SUPPORT_TELEGRAM"), TELEGRAM_HANDLE);
+  assert.equal(literal("SUPPORT_EMAIL"), SUPPORT_EMAIL);
+  // Written for reading (+1 808 998 5226); compared by digits, which is
+  // the only part that has to be right.
+  assert.equal(literal("SUPPORT_WHATSAPP").replace(/[^0-9]/g, ""), WHATSAPP_PHONE);
+});
+
+test("the bot tells a stranger where to go instead of answering them", () => {
+  const webhook = readFileSync(`${FUNCTIONS}/telegram-webhook/index.ts`, "utf8");
+  assert.match(
+    webhook,
+    /if \(!owner\) \{[\s\S]{0,400}?NOT_A_SUPPORT_CHANNEL/,
+    "the owner gate is gone -- a non-owner would reach the model again",
+  );
+  // The gate has to come before the conversational call, or it gates
+  // nothing.
+  const gate = webhook.indexOf("if (!owner)");
+  const reply = webhook.indexOf("handleIncomingMessage({");
+  assert.ok(gate > 0 && reply > 0, "could not locate the gate and the reply call");
+  assert.ok(gate < reply, "the owner gate sits after the model call, so it gates nothing");
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
