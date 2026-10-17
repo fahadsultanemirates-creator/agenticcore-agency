@@ -11,29 +11,17 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { handleIncomingMessage, getConversationHistory } from '../_shared/bot-core.ts';
+import { CORS_HEADERS, jsonResponse } from '../_shared/cors.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 const ANTHROPIC_MODEL = Deno.env.get('ANTHROPIC_MODEL') || undefined;
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS'
-};
-
 const MAX_VISITOR_ID_LENGTH = 100;
 const MAX_MESSAGE_LENGTH = 4000;
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
-function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' }
-  });
-}
 
 function isValidVisitorId(id: unknown): id is string {
   return typeof id === 'string' && id.length > 0 && id.length <= MAX_VISITOR_ID_LENGTH;
