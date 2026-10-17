@@ -17,7 +17,9 @@ import process from "node:process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import {
+  SOCIAL_LINKS,
   SUPPORT_EMAIL,
+  TELEGRAM_CHANNEL_HANDLE,
   TELEGRAM_HANDLE,
   TELEGRAM_URL,
   WHATSAPP_PHONE,
@@ -198,10 +200,54 @@ test("no legacy static page links a stale Telegram handle", () => {
     const body = readFileSync(file, "utf8").replace(/<!--[\s\S]*?-->/g, " ");
     for (const match of body.matchAll(/t\.me\/([A-Za-z0-9_]+)/g)) {
       if (match[1] === TELEGRAM_HANDLE || match[1] === ORDER_BOT) continue;
+      if (match[1] === TELEGRAM_CHANNEL_HANDLE) continue;
       offenders.push(`public/${file.slice(PUBLIC.length + 1)} → t.me/${match[1]}`);
     }
   }
   assert.deepEqual(offenders, []);
+});
+
+test("the channel handle is only ever used as the channel", () => {
+  // agenticCoreHQ is a trap: it used to be the SUPPORT handle, was
+  // renamed to AgenticCorebiz, and is now the broadcast channel. The
+  // test above had to start allowing it, so this one keeps the original
+  // protection -- it may appear, but only wearing the channel's label.
+  // A stale support link reappearing would carry some other label and
+  // still be caught.
+  const offenders: string[] = [];
+  for (const file of PAGES) {
+    const name = `public/${file.slice(PUBLIC.length + 1)}`;
+    const body = readFileSync(file, "utf8").replace(/<!--[\s\S]*?-->/g, " ");
+    const total = [...body.matchAll(/t\.me\/agenticCoreHQ\b/g)].length;
+    const labelled = [
+      ...body.matchAll(/<a\s[^>]*href="https:\/\/t\.me\/agenticCoreHQ"[^>]*aria-label="Telegram channel"/g),
+    ].length;
+    if (total !== labelled) {
+      offenders.push(`${name}: ${total} link(s) to the channel, ${labelled} labelled as one`);
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+
+test("the channel is never offered as a way to get help", () => {
+  // A channel cannot reply. Pointing someone with a problem at it is
+  // worse than giving them nothing.
+  assert.notEqual(TELEGRAM_CHANNEL_HANDLE, TELEGRAM_HANDLE);
+  assert.ok(
+    !TELEGRAM_URL.includes(TELEGRAM_CHANNEL_HANDLE),
+    "the support link points at the broadcast channel",
+  );
+  for (const file of PAGES) {
+    const body = readFileSync(file, "utf8").replace(/<!--[\s\S]*?-->/g, " ");
+    for (const match of body.matchAll(
+      /<a\s[^>]*href="https:\/\/t\.me\/agenticCoreHQ"[^>]*>/g,
+    )) {
+      assert.ok(
+        !/support|help|contact/i.test(match[0]),
+        `public/${file.slice(PUBLIC.length + 1)} offers the channel as support: ${match[0]}`,
+      );
+    }
+  }
 });
 
 test("the functions' copy of the support details matches this one", () => {
@@ -238,6 +284,102 @@ test("the bot tells a stranger where to go instead of answering them", () => {
   const reply = webhook.indexOf("handleIncomingMessage({");
   assert.ok(gate > 0 && reply > 0, "could not locate the gate and the reply call");
   assert.ok(gate < reply, "the owner gate sits after the model call, so it gates nothing");
+});
+
+// ---------------------------------------------------------------------
+// The public accounts.
+//
+// All three sites post to the same six. They are asserted by exact URL
+// rather than by shape: the two Facebook links that used to be here were
+// both well-formed facebook.com URLs, and both were wrong.
+// ---------------------------------------------------------------------
+
+test("the six public accounts are exactly the ones the owner gave", () => {
+  assert.deepEqual(
+    SOCIAL_LINKS.map((s) => [s.key, s.href]),
+    [
+      ["x", "https://x.com/AgenticCoreHQ"],
+      ["facebook", "https://www.facebook.com/people/AgenticCore/61593981579304/"],
+      ["instagram", "https://www.instagram.com/agenticcore.agency"],
+      ["youtube", "https://www.youtube.com/@AgenticcoreAgency"],
+      ["tiktok", "https://www.tiktok.com/@agenticcore.agency"],
+      ["telegram-channel", "https://t.me/agenticCoreHQ"],
+    ],
+  );
+});
+
+test("this site's own business email is the right one", () => {
+  assert.equal(SUPPORT_EMAIL, "hello@agenticcore.agency");
+});
+
+test("no Facebook share-link survives anywhere", () => {
+  // /share/<id> links are opaque: you cannot tell by reading one whether
+  // it points at the right Page, which is exactly how the three sites
+  // drifted onto two different ones.
+  const offenders: string[] = [];
+  const scan = (name: string, body: string) => {
+    for (const m of body.matchAll(/facebook\.com\/share\/[A-Za-z0-9]+/g)) {
+      offenders.push(`${name} → ${m[0]}`);
+    }
+  };
+  for (const file of FILES) {
+    scan(file.replace(SRC, "src/").replace(FUNCTIONS, "supabase/functions"), readFileSync(file, "utf8"));
+  }
+  for (const file of PAGES) scan(`public/${file.slice(PUBLIC.length + 1)}`, readFileSync(file, 'utf8'));
+  assert.deepEqual(offenders, []);
+});
+
+test("every account in the list is actually drawn in the footer", () => {
+  // The footer maps key -> icon. A key with no icon is a hole in the
+  // row; TypeScript catches it at build time and this catches it here,
+  // where the failure names the missing account.
+  const footer = readFileSync(new URL("../components/landing/Footer.tsx", import.meta.url).pathname, "utf8");
+  const icons = footer.slice(footer.indexOf("const ICONS"), footer.indexOf("};", footer.indexOf("const ICONS")));
+  assert.ok(icons.length > 0, "the footer no longer has an ICONS map — this test is stale");
+  const missing = SOCIAL_LINKS.filter((s) => !new RegExp(`(^|\\s)"?${s.key}"?:`, "m").test(icons));
+  assert.deepEqual(missing.map((s) => s.key), []);
+});
+
+test("no component writes a social URL by hand", () => {
+  const hosts = /(facebook|instagram|tiktok)\.com|youtube\.com|x\.com\/Agentic/;
+  const offenders: string[] = [];
+  for (const file of FILES) {
+    if (file.endsWith("/data/contact.ts")) continue;
+    const body = code(readFileSync(file, "utf8"));
+    if (hosts.test(body)) {
+      offenders.push(file.replace(SRC, "src/").replace(FUNCTIONS, "supabase/functions"));
+    }
+  }
+  assert.deepEqual(offenders, []);
+});
+
+test("the ordering bot is not linked on this site", () => {
+  // The bot belongs to .click only. The owner's bot on this site is
+  // owner-only and must never be advertised to visitors.
+  // code() strips comments: contact.ts names the bot in prose to explain
+  // why it is .click's and not ours, and that is documentation, not a link.
+  const offenders = FILES.filter((f) => code(readFileSync(f, "utf8")).includes(ORDER_BOT)).map((f) =>
+    f.replace(SRC, "src/").replace(FUNCTIONS, "supabase/functions"),
+  );
+  assert.deepEqual(offenders, []);
+});
+
+test("the legacy static pages carry the same accounts as the footer", () => {
+  // These pages predate the React footer and are served directly by
+  // Netlify, which matches a file before it consults a redirect -- so a
+  // visitor really can land on one. They had their own copies of every
+  // link, which is how two sites ended up on two different Facebook
+  // pages.
+  const mismatches: string[] = [];
+  for (const file of PAGES) {
+    const name = `public/${file.slice(PUBLIC.length + 1)}`;
+    const body = readFileSync(file, "utf8").replace(/<!--[\s\S]*?-->/g, " ");
+    if (!/footer-social/.test(body)) continue;
+    for (const social of SOCIAL_LINKS) {
+      if (!body.includes(social.href)) mismatches.push(`${name} is missing ${social.label}`);
+    }
+  }
+  assert.deepEqual(mismatches, []);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);
