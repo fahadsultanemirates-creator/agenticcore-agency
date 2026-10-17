@@ -12,6 +12,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.132.0';
 import { handleIncomingMessage } from '../_shared/bot-core.ts';
+import { NOT_A_SUPPORT_CHANNEL } from '../_shared/support.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -472,13 +473,29 @@ export async function handleRequest(req: Request): Promise<Response> {
   const fromId = message?.from?.id;
   const owner = isOwner(fromId);
 
+  // Owner only, and this is the gate -- everything below it, the
+  // commands AND the conversational reply, is the owner's.
+  //
+  // Until now anyone who found the bot could talk to it and get a model
+  // answer, which made it a fourth support channel with nobody watching
+  // it. Support is a person on Telegram, WhatsApp or email; this bot
+  // reports what happens on the website and takes delivery instructions
+  // back, so a stranger gets told where to go instead.
+  //
+  // Fails closed: isOwner() is false when OWNER_TELEGRAM_ID is unset, so
+  // a missing env var silences the bot rather than opening it.
+  if (!owner) {
+    await sendTelegramMessage(chatId, NOT_A_SUPPORT_CHANNEL).catch(() => {});
+    return new Response('ok');
+  }
+
   try {
-    if (owner && STATUS_PATTERN.test(trimmed)) {
+    if (STATUS_PATTERN.test(trimmed)) {
       await handleStatusCommand(chatId);
       return new Response('ok');
     }
 
-    if (owner) {
+    {
       const approveMatch = trimmed.match(APPROVE_PATTERN);
       if (approveMatch) {
         await handleApproveCommand(chatId, approveMatch[1].toUpperCase());
