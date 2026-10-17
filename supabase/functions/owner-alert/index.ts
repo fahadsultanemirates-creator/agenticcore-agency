@@ -11,9 +11,9 @@
 // payram-webhook. verify_jwt is off because the caller is pg_net, which
 // has no user session to present.
 //
-// The secret is read from Vault rather than from an environment
-// variable, and that is deliberate: it means the value exists in
-// exactly one place. The migration generates it with
+// The secret is read from Vault (via the owner_alert_expected_secret
+// RPC) rather than from an environment variable, and that is
+// deliberate: it means the value exists in exactly one place. The migration generates it with
 // gen_random_bytes(), so nobody -- not the owner, not an assistant
 // setting this up -- ever has to type it, paste it between two consoles,
 // or have it sit in a chat log. Rotating it is one UPDATE and no deploy.
@@ -37,20 +37,24 @@ const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
 
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-/** The expected secret, from Vault. Empty string on any failure. */
+/**
+ * The expected secret, from Vault. Empty string on any failure.
+ *
+ * Through an RPC rather than reading vault.decrypted_secrets directly,
+ * because PostgREST serves only the schemas it is configured to expose
+ * and vault is deliberately not one of them -- .schema('vault') fails
+ * with "Invalid schema: vault" no matter how the SQL grants are set.
+ * owner_alert_expected_secret() is SECURITY DEFINER in public and
+ * executable by service_role alone.
+ */
 async function expectedSecret(): Promise<string> {
-  const { data, error } = await supabaseAdmin
-    .schema('vault')
-    .from('decrypted_secrets')
-    .select('decrypted_secret')
-    .eq('name', 'owner_alert_secret')
-    .maybeSingle();
+  const { data, error } = await supabaseAdmin.rpc('owner_alert_expected_secret');
   if (error) {
     // Never log the value, only that the lookup failed.
     console.error('owner-alert: could not read owner_alert_secret:', error.message);
     return '';
   }
-  return (data?.decrypted_secret as string | undefined) ?? '';
+  return (data as string | null) ?? '';
 }
 
 async function sendTelegram(text: string): Promise<void> {
