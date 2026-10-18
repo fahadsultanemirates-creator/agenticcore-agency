@@ -32,3 +32,16 @@ verify_jwt = false
 # the code cannot skip anyway.
 [functions.usdt-invoice]
 verify_jwt = false
+
+# owner-alert is called by Postgres triggers through pg_net, which sends
+# no Supabase JWT -- it authenticates on a shared secret header read from
+# Vault instead. Without this line the platform gate rejects every alert
+# with a 401 before the function runs, and the owner silently stops being
+# told about orders.
+#
+# This was missing while owner-alert was deployed by hand with verify_jwt
+# set in the dashboard, so nothing in the repo recorded it. The deploy
+# workflow added alongside this would have reset it to the default on its
+# first run.
+[functions.owner-alert]
+verify_jwt = false

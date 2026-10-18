@@ -5,6 +5,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { Landing } from "./pages/Landing";
 import { NotFound } from "./pages/NotFound";
 import { ScrollToHash } from "./components/ScrollToHash";
+import { useTrackVisit } from "./lib/useTrackVisit";
 
 // The landing page is the sales page, and most of its visitors never sign
 // in. Bundling the dashboard, the request wizard, the projects page and
@@ -53,6 +54,8 @@ const Contact = lazy(() => import("./pages/Contact").then((m) => ({ default: m.C
  * each is a self-contained page rather than part of the signed-in flow.
  */
 export default function App() {
+  useTrackVisit();
+
   return (
     <AuthProvider>
       {/* Blank rather than a spinner: these chunks arrive in well under

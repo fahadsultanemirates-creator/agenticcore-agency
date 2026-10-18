@@ -1,20 +1,27 @@
 import { Mail } from "lucide-react";
 import type { ComponentType } from "react";
-import { SUPPORT_EMAIL, TELEGRAM_URL, whatsAppUrl } from "../../data/contact";
+import { SOCIAL_LINKS, SUPPORT_EMAIL, TELEGRAM_URL, whatsAppUrl, type SocialKey } from "../../data/contact";
 import { Link } from "react-router-dom";
 import { Logo } from "../Logo";
-import { FacebookIcon, InstagramIcon, XIcon, YouTubeIcon } from "../icons/SocialIcons";
+import { FacebookIcon, InstagramIcon, TikTokIcon, XIcon, YouTubeIcon } from "../icons/SocialIcons";
 import { TelegramIcon } from "../icons/TelegramIcon";
 import { WhatsAppIcon } from "../icons/WhatsAppIcon";
 
-// Every link here is one that already existed on the pre-React pages.
-// A footer that invents a channel nobody runs is a dead end with a logo.
-const SOCIALS: { href: string; label: string; icon: ComponentType<{ className?: string }> }[] = [
-  { href: "https://x.com/AgenticCoreHQ", label: "X", icon: XIcon },
-  { href: "https://www.facebook.com/share/1HppKFetgD/", label: "Facebook", icon: FacebookIcon },
-  { href: "https://instagram.com/agenticcore.agency", label: "Instagram", icon: InstagramIcon },
-  { href: "https://youtube.com/@AgenticcoreAgency", label: "YouTube", icon: YouTubeIcon },
-];
+// The accounts themselves live in data/contact.ts, shared with .biz and
+// .click so the three footers cannot drift apart. Only the drawing of
+// them is local.
+//
+// Record<SocialKey, ...> rather than a loose lookup: adding an account to
+// that list without giving it an icon here fails the build instead of
+// rendering a hole.
+const ICONS: Record<SocialKey, ComponentType<{ className?: string }>> = {
+  x: XIcon,
+  facebook: FacebookIcon,
+  instagram: InstagramIcon,
+  youtube: YouTubeIcon,
+  tiktok: TikTokIcon,
+  "telegram-channel": TelegramIcon,
+};
 
 const LEGAL = [
   { href: "/contact", label: "Contact" },
@@ -89,18 +96,22 @@ export function Footer() {
         <div className="flex flex-col items-center gap-3">
           <p className="text-xs font-semibold tracking-wide text-fg-faint uppercase">Follow us</p>
           <div className="flex items-center gap-3">
-            {SOCIALS.map((social) => (
-              <a
-                key={social.href}
-                href={social.href}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={social.label}
-                className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-fg-muted transition-colors hover:border-cyan-400/50 hover:text-fg"
-              >
-                <social.icon className="h-5 w-5" />
-              </a>
-            ))}
+            {SOCIAL_LINKS.map((social) => {
+              const Icon = ICONS[social.key];
+              return (
+                <a
+                  key={social.key}
+                  href={social.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={social.label}
+                  title={social.label}
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-fg-muted transition-colors hover:border-cyan-400/50 hover:text-fg"
+                >
+                  <Icon className="h-5 w-5" />
+                </a>
+              );
+            })}
           </div>
         </div>
 
