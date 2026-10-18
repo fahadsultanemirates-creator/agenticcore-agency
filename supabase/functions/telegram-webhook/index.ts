@@ -83,7 +83,18 @@ async function callClaudePlainText(prompt: string): Promise<string> {
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text');
+  // b is annotated rather than inferred. Under esm.sh, deno cannot
+  // resolve messages.create()'s overloads to a typed Message, so
+  // response.content arrives untyped and the predicate alone left b
+  // implicitly any -- TS7006, which failed the first gating type-check.
+  //
+  // Typed structurally, not as Anthropic.ContentBlock: TextBlock is
+  // known to resolve here (it was already in this line and drew no
+  // error), and a predicate only requires the asserted type to be
+  // assignable to the parameter's, which it is.
+  const textBlock = response.content.find(
+    (b: { type: string }): b is Anthropic.TextBlock => b.type === 'text'
+  );
   if (!textBlock) throw new Error('Claude response missing a text block');
   return textBlock.text;
 }
