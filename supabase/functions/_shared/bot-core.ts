@@ -20,7 +20,15 @@
 
 import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.132.0';
 import { zodOutputFormat } from 'https://esm.sh/@anthropic-ai/sdk@0.132.0/helpers/zod';
-import { z } from 'https://esm.sh/zod@3.25.76';
+// zod/v4, not the bare entry. @anthropic-ai/sdk's helpers/zod does
+// `import * as z from 'zod/v4'` and calls z.toJSONSchema(), which exists
+// only in zod's v4 API. zod@3.25.76 ships BOTH: the bare specifier is the
+// v3 API, and /v4 is the v4 one. Importing the bare entry here made
+// esm.sh hand the SDK helper the v3 module, so every Claude call died
+// with "TypeError: $.toJSONSchema is not a function" -- which the
+// functions reported to visitors as "Something went wrong on our end",
+// with no clue it was a dependency-resolution problem.
+import { z } from 'https://esm.sh/zod@3.25.76/v4';
 import { BUSINESS_KNOWLEDGE_PROMPT } from './business-knowledge.ts';
 
 // deno-lint-ignore no-explicit-any
