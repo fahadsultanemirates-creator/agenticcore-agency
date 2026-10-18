@@ -53,6 +53,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: 'npm'
+
+      # npm test here is not the same shape as .click's, which this
+      # workflow was adapted from. There the suite only covers
+      # supabase/functions/_shared and src/lib, neither of which imports
+      # anything installed -- so it needs no node_modules and the
+      # workflow had no install step. These repos test src/data too,
+      # which imports lucide-react, and the first real run died on
+      # ERR_MODULE_NOT_FOUND before a single assertion ran.
+      - name: Install dependencies
+        run: npm ci
 
       # config.toml names each function's verify_jwt. An entry pointing at
       # a directory that no longer exists fails the deploy step itself --
@@ -92,13 +103,11 @@ jobs:
       # excluded deliberately: they run under Node, so Deno is the wrong
       # compiler to judge them by -- npm test below is their check.
       #
-      # continue-on-error until this has been seen green once. These
-      # functions have never been type-checked by CI, so there may be
-      # accumulated errors; a brand-new gate that blocks every deploy on
-      # day one is worse than the stale deploys this workflow exists to
-      # fix. Once a run passes, delete this line so it gates properly.
+      # This was continue-on-error when introduced, because these
+      # functions had never been checked by CI and deno could not be run
+      # from the environment the workflow was written in. Run 1 checked
+      # all eight entrypoints and reported nothing, so it gates now.
       - name: Type-check the functions
-        continue-on-error: true
         run: deno check supabase/functions/*/index.ts
 
       - name: Run the tests
