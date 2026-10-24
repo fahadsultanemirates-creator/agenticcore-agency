@@ -12,7 +12,7 @@ const LINKS: { to: string; label: string; anchor?: boolean }[] = [
   { to: "/services?capability=ai", label: "AI & Automation" },
   { to: "/packages", label: "Packages" },
   { to: "/#how-it-works", label: "How It Works", anchor: true },
-  { to: "/forge", label: "Create a Project" },
+  { to: "/maya", label: "Create a Project" },
   { to: "/#family", label: "AgenticCore Family", anchor: true },
 ];
 

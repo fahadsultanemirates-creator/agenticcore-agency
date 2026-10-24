@@ -32,7 +32,7 @@ const BRANDS = [
     name: "AgenticCore.biz",
     headline: "Need help running your business?",
     description:
-      "Business planning, administration, bookkeeping assistance, customer management, back-office operations and ongoing business support.",
+      "Business planning, research, proposals, invoice templates and customer record setup.",
     note: null,
     cta: "Visit AgenticCore.biz",
     href: "https://agenticcore.biz",
@@ -45,7 +45,7 @@ const BRANDS = [
     name: "AgenticCore.agency",
     headline: "Need custom technology?",
     description:
-      "Professional websites, custom applications, AI agents, dashboards, integrations and intelligent automation.",
+      "Professional websites, scoped applications, dashboards, brand identity and interface design.",
     note: "You are here.",
     cta: "Explore Agency Services",
     href: "/services",
@@ -59,7 +59,7 @@ export function FamilySection() {
   return (
     <section id="family" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
       <h2 className="font-display text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
-        Three Specialisations. One Connected AgenticCore Ecosystem.
+        Specialist projects. A wider digital office.
       </h2>
       <p className="mt-2 max-w-xl text-fg-muted">
         If what you need is somebody else's speciality, we will say so.
@@ -118,6 +118,10 @@ export function FamilySection() {
             </a>
           );
         })}
+        <a href="https://agenticcore.group/services.html" className="mt-8 block rounded-2xl border border-border bg-surface p-6 text-fg hover:underline">
+          <strong>AgenticCore Group — your digital office ↗</strong>
+          <p className="mt-2 text-sm text-fg-muted">Managed departments, recurring support and your own office framework. Explore services and pricing with the same AgenticCore team.</p>
+        </a>
       </div>
     </section>
   );

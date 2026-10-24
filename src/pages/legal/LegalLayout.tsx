@@ -35,8 +35,8 @@ export function LegalLayout({
             hello@agenticcore.agency
           </a>{" "}
           or{" "}
-          <Link to="/forge" className="font-semibold text-cyan-400 hover:underline">
-            ask Forge
+          <Link to="/maya" className="font-semibold text-cyan-400 hover:underline">
+            ask Maya
           </Link>
           .
         </p>

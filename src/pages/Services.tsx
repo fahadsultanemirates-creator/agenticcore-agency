@@ -57,6 +57,7 @@ export function Services() {
   return (
     <PublicShell title="Services">
       <section className="py-10 sm:py-14">
+        <a href="https://agenticcore.group/services.html" className="mb-6 block rounded-xl border border-border bg-surface p-4 text-sm text-fg-muted">Looking for ongoing departments or an office framework? Explore AgenticCore Group ↗</a>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
           All {SERVICE_COUNT} services
         </h1>
@@ -117,8 +118,8 @@ export function Services() {
           <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
             <p className="text-sm text-fg-muted">
               Nothing matches that. Try a different word, or{" "}
-              <Link to="/forge" className="font-semibold text-cyan-400 hover:underline">
-                describe it to Forge
+              <Link to="/maya" className="font-semibold text-cyan-400 hover:underline">
+                describe it to Maya
               </Link>{" "}
               and it will work out which service fits.
             </p>

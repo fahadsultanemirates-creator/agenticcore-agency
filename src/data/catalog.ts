@@ -37,7 +37,7 @@ import {
  * they drifted -- the same failure .biz had, where its dashboard was still
  * selling services the site had retired. Every surface reads this file:
  * the homepage, the directory, the detail pages, the dashboard, the
- * request wizard, Forge and the packages page.
+ * request wizard, Maya and the packages page.
  *
  * WHY RETIRED SERVICES STAY. requests.service_category and
  * requests.task_type are free text and requests.agreed_price is a numeric
@@ -124,7 +124,6 @@ const BUILD: Service[] = [
     summary: "One responsive page that explains the offer and collects enquiries.",
     priceUsd: 49,
     billing: "one_time",
-    featured: true,
     deliverables: [
       "One responsive landing page",
       "Professional layout and content organisation",
@@ -146,6 +145,7 @@ const BUILD: Service[] = [
     externalCosts: ["Domain registration", "Hosting beyond a supported free tier"],
     deliveryEstimate: "3–5 working days",
     revisions: 1,
+    featured: true,
     status: "active",
   },
   {
@@ -156,7 +156,6 @@ const BUILD: Service[] = [
     summary: "A small professional site with navigation, content and a contact route.",
     priceUsd: 149,
     billing: "one_time",
-    featured: true,
     deliverables: [
       "Three to five responsive pages",
       "Professional design and navigation",
@@ -171,6 +170,7 @@ const BUILD: Service[] = [
     externalCosts: ["Domain registration", "Third-party hosting charges"],
     deliveryEstimate: "5–10 working days",
     revisions: 1,
+    featured: true,
     status: "active",
   },
   {
@@ -227,6 +227,7 @@ const BUILD: Service[] = [
     externalCosts: ["Platform subscription", "Payment provider fees", "Domain and hosting"],
     deliveryEstimate: "10–20 working days",
     revisions: 1,
+    featured: true,
     status: "active",
   },
   {
@@ -250,6 +251,7 @@ const BUILD: Service[] = [
     externalCosts: ["Your existing hosting and platform costs"],
     deliveryEstimate: "5–10 working days",
     revisions: 1,
+    featured: true,
     status: "active",
   },
   {
@@ -261,7 +263,6 @@ const BUILD: Service[] = [
     priceUsd: 399,
     billing: "one_time",
     startingFrom: true,
-    featured: true,
     deliverables: [
       "One limited web application MVP",
       "Core dashboard screens",
@@ -284,6 +285,7 @@ const BUILD: Service[] = [
     externalCosts: ["Hosting", "Database and third-party service subscriptions"],
     deliveryEstimate: "15–25 working days",
     revisions: 1,
+    featured: true,
     status: "active",
   },
   {
@@ -332,7 +334,7 @@ const BUILD: Service[] = [
     externalCosts: ["Your hosting and domain costs"],
     deliveryEstimate: "Ongoing, monthly",
     revisions: 0,
-    status: "active",
+    status: "archived",
   },
 ];
 
@@ -371,6 +373,7 @@ const DESIGN: Service[] = [
     ],
     deliveryEstimate: "5–8 working days",
     revisions: 1,
+    featured: true,
     status: "active",
   },
   {
@@ -413,7 +416,6 @@ const AUTOMATE: Service[] = [
     priceUsd: 99,
     billing: "one_time",
     startingFrom: true,
-    featured: true,
     deliverables: [
       "One defined automation across supported systems",
       "Configuration and testing",
@@ -428,7 +430,7 @@ const AUTOMATE: Service[] = [
     externalCosts: ["Subscriptions for the tools being connected", "Automation platform fees, where one is used"],
     deliveryEstimate: "3–7 working days",
     revisions: 1,
-    status: "active",
+    status: "archived",
   },
   {
     id: "AG-12",
@@ -451,7 +453,7 @@ const AUTOMATE: Service[] = [
     externalCosts: ["Hosting for the bot", "Any model/API usage if AI is added later"],
     deliveryEstimate: "5–10 working days",
     revisions: 1,
-    status: "active",
+    status: "archived",
   },
   {
     id: "AG-13",
@@ -476,7 +478,7 @@ const AUTOMATE: Service[] = [
     externalCosts: ["Provider subscription", "Per-conversation messaging charges"],
     deliveryEstimate: "7–14 working days",
     revisions: 1,
-    status: "active",
+    status: "archived",
   },
   {
     id: "AG-14",
@@ -499,7 +501,7 @@ const AUTOMATE: Service[] = [
     externalCosts: ["Model/API usage, billed by the provider", "Hosting for the assistant"],
     deliveryEstimate: "5–10 working days",
     revisions: 1,
-    status: "active",
+    status: "archived",
   },
   {
     id: "AG-15",
@@ -510,7 +512,6 @@ const AUTOMATE: Service[] = [
     priceUsd: 149,
     billing: "one_time",
     startingFrom: true,
-    featured: true,
     deliverables: [
       "One purpose-built AI agent performing one defined task",
       "Connection to the supported tools it needs",
@@ -526,7 +527,7 @@ const AUTOMATE: Service[] = [
     externalCosts: ["Model/API usage", "Hosting"],
     deliveryEstimate: "7–14 working days",
     revisions: 1,
-    status: "active",
+    status: "archived",
   },
   {
     id: "AG-16",
@@ -537,7 +538,6 @@ const AUTOMATE: Service[] = [
     priceUsd: 499,
     billing: "one_time",
     startingFrom: true,
-    featured: true,
     deliverables: [
       "A tightly scoped prototype or framework",
       "Approximately two to four specialised agents with defined responsibilities",
@@ -563,7 +563,7 @@ const AUTOMATE: Service[] = [
     externalCosts: ["Model/API usage, which scales with how much the system runs", "Hosting and infrastructure"],
     deliveryEstimate: "20–35 working days",
     revisions: 1,
-    status: "active",
+    status: "archived",
   },
   {
     id: "AG-17",
@@ -589,7 +589,7 @@ const AUTOMATE: Service[] = [
     externalCosts: ["Telephony provider and per-minute charges", "Speech and language model usage"],
     deliveryEstimate: "14–25 working days",
     revisions: 1,
-    status: "active",
+    status: "archived",
   },
   {
     id: "AG-18",
@@ -616,7 +616,7 @@ const AUTOMATE: Service[] = [
     externalCosts: ["Subscriptions for the systems being connected", "Any per-call API charges"],
     deliveryEstimate: "7–15 working days",
     revisions: 1,
-    status: "active",
+    status: "archived",
   },
   {
     id: "AG-19",
@@ -643,7 +643,7 @@ const AUTOMATE: Service[] = [
     externalCosts: ["Infrastructure", "Model/API usage", "Third-party platform costs, unless your quotation says otherwise"],
     deliveryEstimate: "Ongoing, monthly",
     revisions: 0,
-    status: "active",
+    status: "archived",
   },
 ];
 
@@ -667,12 +667,7 @@ export const categories: {
     blurb: "Brand identity and designed screens, ready to build from.",
     icon: Palette,
   },
-  {
-    id: "automate",
-    label: "Automation, AI & Integrations",
-    blurb: "Workflow automation, AI agents, bots, voice, APIs and MCP integrations.",
-    icon: BrainCircuit,
-  },
+
 ];
 
 /**
@@ -712,22 +707,8 @@ export const capabilities: {
     icon: LayoutDashboard,
     serviceIds: ["AG-06", "AG-10"],
   },
-  {
-    id: "ai",
-    title: "AI Agents & Automation",
-    blurb: "Purpose-built AI assistants, business agents, connected workflows and multi-agent systems.",
-    cta: "Explore AI Solutions",
-    icon: BrainCircuit,
-    serviceIds: ["AG-14", "AG-15", "AG-16", "AG-17", "AG-11", "AG-12"],
-  },
-  {
-    id: "integrations",
-    title: "Integrations & Technical Support",
-    blurb: "Connect applications, integrate APIs, deploy systems and keep your technology running.",
-    cta: "Explore Integrations",
-    icon: Blocks,
-    serviceIds: ["AG-18", "AG-13", "AG-07", "AG-08", "AG-19"],
-  },
+  { id: "design", title: "Brand & Interface Design", blurb: "A coordinated identity kit or scoped interface designs for your website and application.", cta: "Explore Design", icon: Palette, serviceIds: ["AG-09", "AG-10"] },
+  { id: "integrations", title: "Deployment & Handover", blurb: "Domain connection, HTTPS and deployment to your hosting account, with a defined handover.", cta: "Explore Deployment", icon: Blocks, serviceIds: ["AG-07"] },
 ];
 
 // ---------------------------------------------------------------------
@@ -781,33 +762,6 @@ export const packages: Package[] = [
     revisions: 1,
     externalCosts: ["Domain registration", "Hosting", "Commercial font licences where applicable"],
     cta: "Launch My Digital Brand",
-  },
-  {
-    id: "PKG-AUTOMATION-STARTER",
-    name: "Automation Starter",
-    priceUsd: 249,
-    billing: "one_time",
-    audience: "A business doing one repetitive job by hand that a machine should be doing.",
-    included: [
-      "One defined business automation workflow",
-      "One supported external integration",
-      "Basic configuration and testing",
-      "A simple execution or notification process",
-      "Setup documentation",
-      "Agreed handover",
-    ],
-    excluded: [
-      "Ongoing hosting",
-      "Model and API credits",
-      "Messaging fees",
-      "Third-party subscriptions",
-      "A full multi-agent framework",
-    ],
-    serviceIds: ["AG-11", "AG-18"],
-    deliveryEstimate: "7–14 working days",
-    revisions: 1,
-    externalCosts: ["Hosting", "Model/API usage", "Subscriptions for the tools being connected"],
-    cta: "Automate My Workflow",
   },
 ];
 
@@ -925,7 +879,12 @@ export function packageById(id: string): Package | undefined {
 }
 
 export function archivedById(id: string) {
-  return archivedServices.find((s) => s.id === id);
+  const wanted = id.trim().toLowerCase();
+  const retired = services.find((s) => s.status === "archived" && s.id.toLowerCase() === wanted);
+  if (retired) return { id: retired.id, name: retired.name, note: "This service is no longer sold here. Explore managed offices and framework options at https://agenticcore.group/services.html.", replacedBy: undefined };
+  const legacy = archivedServices.find((s) => s.id.toLowerCase() === wanted);
+  if (legacy?.replacedBy && !serviceById(legacy.replacedBy)) return { ...legacy, replacedBy: undefined, note: "This service is no longer sold here. Explore https://agenticcore.group/services.html for office and framework options." };
+  return legacy;
 }
 
 /** True where the published figure is a floor and the real price is quoted. */
@@ -951,7 +910,7 @@ export function formatPrice(item: Service | Package): string {
 export const heroFloors = [
   { label: "Landing pages", serviceId: "AG-01" },
   { label: "websites", serviceId: "AG-02" },
-  { label: "custom AI agents", serviceId: "AG-15" },
+  { label: "brand identity kits", serviceId: "AG-09" },
 ] as const;
 
 export function heroFloorUsd(serviceId: string): number {

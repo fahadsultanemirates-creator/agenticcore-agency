@@ -64,7 +64,7 @@ export function Dashboard() {
           Welcome back, {firstName}
         </h1>
         <p className="mt-2 max-w-2xl text-fg-muted">
-          Pick a service below to place a request, or describe what you need to Forge and get it
+          Pick a service below to place a request, or describe what you need to Maya and get it
           scoped and priced.
         </p>
 
@@ -77,11 +77,11 @@ export function Dashboard() {
             Your projects
           </Link>
           <Link
-            to="/forge"
+            to="/maya"
             className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-border px-6 py-3 text-sm font-semibold text-fg transition-colors hover:border-cyan-400/50"
           >
             <Sparkles className="h-4 w-4" />
-            Chat with Forge
+            Chat with Maya
           </Link>
         </div>
       </section>

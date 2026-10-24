@@ -8,7 +8,7 @@ import { supabase } from "../../lib/supabase";
 /**
  * Creating a project without the model.
  *
- * Two jobs. It is the fallback when Forge cannot answer -- the brief is
+ * Two jobs. It is the fallback when Maya cannot answer -- the brief is
  * explicit that an AI outage must not be the only path to starting a
  * project -- and it is how a conversation becomes a saved draft, so the
  * work of describing a project is not lost when the tab closes.

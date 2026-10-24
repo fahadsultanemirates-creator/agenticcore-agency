@@ -22,13 +22,13 @@ export function Hero() {
         </h1>
 
         <p className="animate-fade-up mx-auto mt-6 max-w-2xl text-lg text-fg-muted sm:text-xl">
-          Websites. Applications. AI Agents. Automation.
+          Websites. Applications. Brand identity. Design.
         </p>
 
         <p className="animate-fade-up mx-auto mt-4 max-w-2xl text-base text-fg-muted">
-          Launch a professional website, build a custom application, automate business workflows or
-          create intelligent AI agents — with affordable starting prices, defined deliverables and a
-          project dashboard that keeps everything organised.
+          Launch a professional website, build a scoped application or refine your brand and interface.
+          Each project has defined deliverables, transparent starting prices and a dashboard.
+          Managed offices and framework builds are available through AgenticCore Group.
         </p>
 
         <div className="animate-fade-up mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
@@ -40,11 +40,11 @@ export function Hero() {
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <Link
-            to="/forge"
+            to="/maya"
             className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-border px-7 py-3.5 text-base font-semibold text-fg transition-colors hover:border-cyan-400/60 sm:w-auto"
           >
             <Sparkles className="h-4 w-4 text-cyan-400" />
-            Create a Project with Forge
+            Create a Project with Maya
           </Link>
         </div>
 

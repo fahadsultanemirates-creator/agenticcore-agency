@@ -1,13 +1,13 @@
-import { ArrowLeft, Loader2, Send, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Send } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { TELEGRAM_URL } from "../data/contact";
+import { whatsAppUrl } from "../data/contact";
 import { Link, useSearchParams } from "react-router-dom";
 import { Logo } from "../components/Logo";
 import { ProjectDraftForm } from "../components/forge/ProjectDraftForm";
 import { useAuth } from "../context/AuthContext";
 import { supabase } from "../lib/supabase";
 
-// Forge, the full-page chat assistant.
+// Maya, the full-page chat assistant.
 //
 // Works signed in or not: authenticated clients go through forge-chat
 // (tied to their profile, persistent history), anonymous visitors through
@@ -17,19 +17,19 @@ import { supabase } from "../lib/supabase";
 
 const VISITOR_ID_STORAGE_KEY = "agenticcore_visitor_id";
 // One handle for the whole brand; see src/data/contact.ts.
-const MANAGER_TELEGRAM_URL = TELEGRAM_URL;
+const MANAGER_CONTACT_URL = whatsAppUrl() ?? "/contact";
 
 // The old set offered "Set up my full business for $150" and a logo --
 // a package that no longer exists and work that belongs to .click.
 const SUGGESTIONS = [
   "I need a professional website for my consulting business",
   "Build a customer dashboard with login and order tracking",
-  "I want an AI assistant that answers questions about my business",
-  "Automate repetitive tasks between my CRM and other tools",
+  "I need a brand identity kit for a new business",
+  "Help me redesign my existing website",
 ];
 
 const GREETING =
-  "Hi, I'm Forge 👋 Tell me what you want built — a website, an application, an AI agent or an automation — and I'll help turn it into a proper brief, work out which services fit, and tell you what it's likely to involve. I can't price a job myself; a person does that once the scope is clear.";
+  "Hi, I'm Maya, your AgenticCore guide. Tell me about the website, application or design you need. I'll help clarify the brief and find a service that fits. For a managed office or your own framework, I'll point you to AgenticCore Group.";
 
 type Message = { role: "user" | "assistant"; content: string };
 
@@ -48,7 +48,7 @@ function visitorId(): string {
   }
 }
 
-export function Forge() {
+export function Maya() {
   const { user, session } = useAuth();
   // The homepage's example prompts link here with ?prompt=…, so arriving
   // from one lands with the question already typed rather than on an
@@ -69,7 +69,7 @@ export function Forge() {
 
   const token = session?.access_token ?? null;
 
-  const callForge = async (
+  const callMaya = async (
     action: "history" | "message",
     message?: string
   ): Promise<{ reply?: string; messages?: Message[]; needsHuman?: boolean }> => {
@@ -97,7 +97,7 @@ export function Forge() {
     let cancelled = false;
     (async () => {
       try {
-        const { messages: history } = await callForge("history");
+        const { messages: history } = await callMaya("history");
         if (cancelled) return;
         setMessages(history?.length ? history : [{ role: "assistant", content: GREETING }]);
       } catch {
@@ -126,12 +126,13 @@ export function Forge() {
     setError("");
 
     try {
-      const { reply, needsHuman: handoff } = await callForge("message", trimmed);
-      setMessages((m) => [...m, { role: "assistant", content: reply ?? "" }]);
+      const { reply, needsHuman: handoff } = await callMaya("message", trimmed);
+      if (!reply?.trim()) throw new Error("No reply was returned. Please retry or use the project brief form.");
+      setMessages((m) => [...m, { role: "assistant", content: reply }]);
       if (handoff) setNeedsHuman(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
-      // Forge is down, so offer the path that does not need it rather
+      // Maya is down, so offer the path that does not need it rather
       // than leaving the visitor at a dead end with their requirement
       // half-typed.
       setShowDraftForm(true);
@@ -165,13 +166,13 @@ export function Forge() {
           <Logo compact />
         </Link>
         <span className="ml-auto flex items-center gap-1.5 rounded-full border border-cyan-400/40 bg-cyan-400/10 px-3 py-1.5 text-xs font-semibold text-cyan-400">
-          <Sparkles className="h-3.5 w-3.5" />
-          Forge
+          <img src="/team/maya.webp" alt="" width={32} height={32} className="h-8 w-8 rounded-full object-cover" />
+          Maya
         </span>
       </header>
 
       <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
+        <div aria-live="polite" className="mx-auto flex w-full max-w-2xl flex-col gap-4">
           {messages.map((m, i) => (
             <div
               key={i}
@@ -186,20 +187,20 @@ export function Forge() {
           ))}
 
           {sending && (
-            <div className="self-start rounded-2xl border border-border bg-surface px-4 py-3">
+            <div role="status" aria-label="Maya is thinking" className="self-start rounded-2xl border border-border bg-surface px-4 py-3">
               <Loader2 className="h-4 w-4 animate-spin text-fg-faint" />
             </div>
           )}
 
           {needsHuman && (
             <a
-              href={MANAGER_TELEGRAM_URL}
+              href={MANAGER_CONTACT_URL}
               target="_blank"
               rel="noopener"
               className="self-start rounded-xl border border-cyan-400/30 bg-cyan-400/5 px-4 py-3 text-sm text-fg-muted hover:border-cyan-400/60"
             >
               This one needs a person —{" "}
-              <span className="font-semibold text-cyan-400">talk to a manager on Telegram →</span>
+              <span className="font-semibold text-cyan-400">contact the team on WhatsApp →</span>
             </a>
           )}
 
@@ -259,7 +260,8 @@ export function Forge() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={sending}
-            placeholder="Tell Forge what you need…"
+            aria-label="Message Maya"
+            placeholder="Tell Maya what you need…"
             className="min-w-0 flex-1 rounded-full border-2 border-border bg-surface px-4 py-2.5 text-sm text-fg placeholder:text-fg-faint focus:border-cyan-400 focus:outline-none disabled:opacity-60"
           />
           <button

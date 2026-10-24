@@ -1,8 +1,7 @@
-import { Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 
 /**
- * The floating way into Forge, on every public page.
+ * The floating way into Maya, on every public page.
  *
  * Matches .click's: a labelled pill at every width, 56px tall, with the
  * pulse ring. The owner compared the two and wants this one, so the
@@ -21,12 +20,12 @@ import { Link } from "react-router-dom";
 export function ChatLauncher() {
   return (
     <Link
-      to="/forge"
-      aria-label="Chat with Forge"
+      to="/maya"
+      aria-label="Chat with Maya"
       className="animate-pulse-ring fixed right-5 bottom-[max(1.25rem,env(safe-area-inset-bottom))] z-50 flex h-14 items-center gap-2 rounded-full bg-cyan-400 px-5 font-semibold text-void shadow-glow-cyan transition-transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95 sm:right-8 sm:bottom-8"
     >
-      <Sparkles className="h-4 w-4 shrink-0" />
-      Chat with Forge
+      <img src="/team/maya.webp" alt="" width={32} height={32} className="h-8 w-8 shrink-0 rounded-full object-cover" />
+      Chat with Maya
     </Link>
   );
 }

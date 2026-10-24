@@ -42,7 +42,7 @@ const pages = [
   {
     path: "services",
     title: `All ${activeServices.length} services`,
-    description: `Every service AgenticCore.agency builds — websites, dashboards, AI agents and automation — with the price and delivery estimate for each.`,
+    description: `Every service AgenticCore.agency builds — websites, dashboards, applications and design — with the price and delivery estimate for each.`,
   },
   {
     path: "packages",
@@ -56,16 +56,16 @@ const pages = [
       "Pick a service, tell us what you need, and get a scope and price back. No account needed to start.",
   },
   {
-    path: "forge",
-    title: "Forge",
+    path: "maya",
+    title: "Maya",
     description:
-      "Describe the problem in your own words and Forge works out which services solve it, what it costs and how long it takes.",
+      "Describe the problem in your own words and Maya helps identify suitable services and prepare your brief for scope, price and timeline review.",
   },
   {
     path: "contact",
     title: "Contact",
     description:
-      "Telegram, email, Forge, or start a project — no account needed to ask a question first.",
+      "Telegram, email, Maya, or start a project — no account needed to ask a question first.",
   },
   {
     path: "terms",

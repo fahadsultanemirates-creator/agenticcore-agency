@@ -43,9 +43,9 @@ function test(name: string, fn: () => void): void {
   }
 }
 
-test("nineteen services, not fifty-four", () => {
-  assert.equal(SERVICE_COUNT, 19);
-  assert.equal(activeServices.length, 19);
+test("nine focused technical services", () => {
+  assert.equal(SERVICE_COUNT, 9);
+  assert.equal(activeServices.length, 9);
 });
 
 test("every id is unique and follows AG-nn", () => {
@@ -54,10 +54,10 @@ test("every id is unique and follows AG-nn", () => {
   for (const id of ids) assert.match(id, /^AG-\d{2}$/, id);
 });
 
-test("the ids run AG-01 to AG-19 with no gaps", () => {
+test("the focused ids preserve original identifiers", () => {
   // A gap means a service was dropped in editing and nobody noticed.
   const numbers = activeServices.map((s) => Number(s.id.slice(3))).sort((a, b) => a - b);
-  assert.deepEqual(numbers, Array.from({ length: 19 }, (_, i) => i + 1));
+  assert.deepEqual(numbers, [1, 2, 3, 4, 5, 6, 7, 9, 10]);
 });
 
 test("every price is exactly what the brief specified", () => {
@@ -101,9 +101,9 @@ test("the six featured services are the six the homepage promises", () => {
     ["AG-01", "$49"],
     ["AG-02", "$149"],
     ["AG-06", "From $399"],
-    ["AG-11", "From $99"],
-    ["AG-15", "From $149"],
-    ["AG-16", "From $499"],
+    ["AG-04", "From $349"],
+    ["AG-05", "From $119"],
+    ["AG-09", "$49"],
   ];
   assert.equal(featuredServices.length, 6);
   const got = featuredServices.map((s) => [s.id, formatPrice(s)]).sort();
@@ -125,8 +125,7 @@ test("a 'from' price always reads as a floor", () => {
 test("a quote is needed for exactly the starting-from services", () => {
   const quoted = activeServices.filter(needsQuote).map((s) => s.id);
   assert.deepEqual(quoted.sort(), [
-    "AG-04", "AG-05", "AG-06", "AG-10", "AG-11", "AG-12",
-    "AG-13", "AG-14", "AG-15", "AG-16", "AG-17", "AG-18", "AG-19",
+    "AG-04", "AG-05", "AG-06", "AG-10",
   ]);
 });
 
@@ -153,7 +152,7 @@ test("every service carries the scope a customer needs before buying", () => {
 
 test("the three categories hold every service between them", () => {
   const counts = categories.map((c) => servicesIn(c.id).length);
-  assert.deepEqual(counts, [8, 2, 9]);
+  assert.deepEqual(counts, [7, 2]);
   assert.equal(counts.reduce((a, b) => a + b, 0), SERVICE_COUNT);
 });
 
@@ -178,11 +177,11 @@ test("every active service is reachable from a capability card", () => {
 });
 
 test("three packages, at the agreed prices", () => {
-  assert.equal(packages.length, 3);
+  assert.equal(packages.length, 2);
   const byId = Object.fromEntries(packages.map((p) => [p.id, p]));
   assert.equal(byId["PKG-WEBSITE-STARTER"].priceUsd, 149);
   assert.equal(byId["PKG-WEBSITE-BRAND"].priceUsd, 189);
-  assert.equal(byId["PKG-AUTOMATION-STARTER"].priceUsd, 249);
+  assert.equal(byId["PKG-AUTOMATION-STARTER"], undefined);
   for (const p of packages) {
     assert.equal(p.billing, "one_time", `${p.id} should be a one-time package`);
     assert.ok(p.included.length > 0, `${p.id} includes nothing`);
@@ -225,7 +224,8 @@ test("every archived service says where its work went", () => {
     const hasDestination = Boolean(a.replacedBy) || Boolean(a.movedTo);
     assert.ok(hasDestination, `${a.id} is retired with nowhere to send anyone`);
     if (a.replacedBy) {
-      assert.ok(serviceById(a.replacedBy), `${a.id} points at ${a.replacedBy}, which is not active`);
+      const resolved = archivedById(a.id);
+      if (resolved?.replacedBy) assert.ok(serviceById(resolved.replacedBy));
     }
     if (a.movedTo) {
       assert.ok(["click", "biz"].includes(a.movedTo), `${a.id} moved to an unknown brand`);
@@ -271,19 +271,20 @@ test("no service promises a turnaround Agency cannot make", () => {
   }
 });
 
-test("the multi-agent framework never promises an autonomous production system", () => {
-  // The single most over-promisable thing in the catalogue.
-  const mas = serviceById("AG-16")!;
-  const copy = [...mas.scopeLimits, ...mas.exclusions].join(" ").toLowerCase();
-  assert.match(copy, /prototype|not an unlimited/, "AG-16 does not say it is a scoped prototype");
-  assert.match(copy, /unsupervised|human reviews/, "AG-16 does not state the supervision boundary");
+test("retired automation has an explanation and cannot be ordered", () => {
+  for (const id of ["AG-08", "AG-11", "AG-12", "AG-13", "AG-14", "AG-15", "AG-16", "AG-17", "AG-18", "AG-19"]) {
+    assert.equal(serviceById(id), undefined);
+    assert.ok(archivedById(id)?.note.includes("agenticcore.group"));
+    assert.ok(!packages.some(p => p.serviceIds.includes(id)));
+  }
 });
 
-test("MCP is not sold as a multi-agent framework", () => {
-  // They get conflated constantly, and a customer who buys AG-18 expecting
-  // AG-16 has bought the wrong thing by several hundred dollars.
-  const mcp = serviceById("AG-18")!;
-  assert.match(mcp.scopeLimits.join(" "), /not itself a multi-agent framework/i);
+test("retired automation has an explanation and cannot be ordered", () => {
+  for (const id of ["AG-08", "AG-11", "AG-12", "AG-13", "AG-14", "AG-15", "AG-16", "AG-17", "AG-18", "AG-19"]) {
+    assert.equal(serviceById(id), undefined);
+    assert.ok(archivedById(id)?.note.includes("agenticcore.group"));
+    assert.ok(!packages.some(p => p.serviceIds.includes(id)));
+  }
 });
 
 test("the hero's price floors name the services they actually come from", () => {
@@ -296,13 +297,13 @@ test("the hero's price floors name the services they actually come from", () => 
   assert.deepEqual(quoted, [
     ["Landing pages", 49],
     ["websites", 149],
-    ["custom AI agents", 149],
+    ["brand identity kits", 49],
   ]);
 
   const nounFor: Record<string, RegExp> = {
     "Landing pages": /landing page/i,
     websites: /website/i,
-    "custom AI agents": /ai agent/i,
+    "brand identity kits": /brand identity/i,
   };
   for (const floor of heroFloors) {
     const service = serviceById(floor.serviceId);
