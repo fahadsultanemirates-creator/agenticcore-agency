@@ -14,7 +14,7 @@ window.addEventListener('scroll', () => {
 const emailFab = document.getElementById('emailSupportFab');
 if (emailFab) {
   emailFab.addEventListener('click', () => {
-    const email = 'hello@agenticcore.agency';
+    const email = 'hello@agenticcore.group';
     if (navigator.clipboard) navigator.clipboard.writeText(email).catch(() => {});
 
     const label = emailFab.querySelector('span');

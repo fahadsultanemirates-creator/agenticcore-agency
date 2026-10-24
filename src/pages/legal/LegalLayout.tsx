@@ -29,10 +29,10 @@ export function LegalLayout({
         <p className="mt-12 max-w-2xl text-sm text-fg-muted">
           Questions about any of this?{" "}
           <a
-            href="mailto:hello@agenticcore.agency"
+            href="mailto:hello@agenticcore.group"
             className="font-semibold text-cyan-400 hover:underline"
           >
-            hello@agenticcore.agency
+            hello@agenticcore.group
           </a>{" "}
           or{" "}
           <Link to="/maya" className="font-semibold text-cyan-400 hover:underline">

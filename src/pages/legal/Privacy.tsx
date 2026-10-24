@@ -65,8 +65,8 @@ export function Privacy() {
         <p>
           You can ask for a copy of what we hold, ask us to correct it, or ask for your account and
           data to be deleted — email{" "}
-          <a href="mailto:hello@agenticcore.agency" className="font-semibold text-cyan-400 hover:underline">
-            hello@agenticcore.agency
+          <a href="mailto:hello@agenticcore.group" className="font-semibold text-cyan-400 hover:underline">
+            hello@agenticcore.group
           </a>
           .
         </p>

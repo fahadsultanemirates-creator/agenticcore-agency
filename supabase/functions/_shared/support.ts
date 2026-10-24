@@ -13,7 +13,7 @@
 // clicked from a web page.
 export const SUPPORT_TELEGRAM = 'AgenticCorebiz';
 export const SUPPORT_WHATSAPP = '+1 808 998 5226';
-export const SUPPORT_EMAIL = 'hello@agenticcore.agency';
+export const SUPPORT_EMAIL = 'hello@agenticcore.group';
 
 /**
  * What the bot says to anyone who is not the owner.

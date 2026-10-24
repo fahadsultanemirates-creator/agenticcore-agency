@@ -67,7 +67,7 @@ export function whatsAppLabel(): string | null {
   return null;
 }
 
-export const SUPPORT_EMAIL = "hello@agenticcore.agency";
+export const SUPPORT_EMAIL = "hello@agenticcore.group";
 
 /**
  * The Telegram CHANNEL -- where announcements get posted.
