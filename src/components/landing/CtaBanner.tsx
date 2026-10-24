@@ -22,11 +22,11 @@ export function CtaBanner() {
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            to="/forge"
+            to="/maya"
             className="inline-flex w-full items-center justify-center gap-2 rounded-full border-2 border-border px-7 py-3.5 text-base font-semibold text-fg transition-colors hover:border-cyan-400/60 sm:w-auto"
           >
             <Sparkles className="h-4 w-4 text-cyan-400" />
-            Talk to Forge
+            Talk to Maya
           </Link>
         </div>
       </div>

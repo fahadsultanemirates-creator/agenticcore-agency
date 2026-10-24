@@ -63,10 +63,10 @@ export function Contact() {
           />
           <Channel
             icon={<MessageCircle className="h-5 w-5" aria-hidden />}
-            title="Ask Forge"
+            title="Ask Maya"
             detail="On this site"
             body="Our assistant knows the catalogue, the prices and what each service excludes. It will tell you when something needs a person."
-            href="/forge"
+            href="/maya"
           />
           <Channel
             icon={<ArrowRight className="h-5 w-5" aria-hidden />}

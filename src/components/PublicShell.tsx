@@ -6,7 +6,7 @@ import { Nav } from "./landing/Nav";
 /**
  * The frame every public page below the homepage sits in.
  *
- * The bottom padding is not decoration: it clears the floating Forge
+ * The bottom padding is not decoration: it clears the floating Maya
  * button so the last card in a list is still tappable. Without it the
  * launcher sits on top of whatever ends the page.
  */

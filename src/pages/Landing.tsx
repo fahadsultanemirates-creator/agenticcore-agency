@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { TeamSection } from "../components/landing/TeamSection";
 import { ChatLauncher } from "../components/ChatLauncher";
 import { AiShowcase } from "../components/landing/AiShowcase";
 import { Capabilities } from "../components/landing/Capabilities";
@@ -7,7 +8,7 @@ import { FamilySection } from "../components/landing/FamilySection";
 import { Faq } from "../components/landing/Faq";
 import { FeaturedServices } from "../components/landing/FeaturedServices";
 import { Footer } from "../components/landing/Footer";
-import { ForgeSection } from "../components/landing/ForgeSection";
+import { MayaSection } from "../components/landing/MayaSection";
 import { Hero } from "../components/landing/Hero";
 import { HowItWorks } from "../components/landing/HowItWorks";
 import { Nav } from "../components/landing/Nav";
@@ -24,13 +25,13 @@ import { PackageSection } from "../components/landing/PackageSection";
  */
 export function Landing() {
   useEffect(() => {
-    document.title = "AgenticCore.agency | Websites, AI Agents & Custom Business Automation";
+    document.title = "AgenticCore.agency | Websites, Applications & Design";
   }, []);
 
   return (
     <div>
       <Nav />
-      {/* Clears the floating Forge button so the last section is reachable. */}
+      {/* Clears the floating Maya button so the last section is reachable. */}
       <main className="pb-24 sm:pb-28">
         <Hero />
         <Capabilities />
@@ -38,7 +39,8 @@ export function Landing() {
         <AiShowcase />
         <PackageSection />
         <HowItWorks />
-        <ForgeSection />
+        <MayaSection />
+        <TeamSection />
         <FamilySection />
         <Faq />
         <CtaBanner />

@@ -10,4 +10,5 @@ import { defineConfig } from 'vite'
 // and admin all at once, on a site that currently works.
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: { allowedHosts: ['terminal.local'] },
 })

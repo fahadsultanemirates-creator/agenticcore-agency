@@ -4,7 +4,7 @@ const STEPS = [
   {
     icon: MessageSquarePlus,
     title: "Describe Your Requirements",
-    detail: "Choose a service, or explain the idea to Forge in your own words.",
+    detail: "Choose a service, or explain the idea to Maya in your own words.",
   },
   {
     icon: FileSearch,

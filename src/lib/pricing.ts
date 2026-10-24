@@ -1,4 +1,4 @@
-import { categories, serviceById } from "../data/catalog.ts";
+import { categories, services } from "../data/catalog.ts";
 
 /**
  * The deposit due to start a job: 30%, the split the site promises.
@@ -31,7 +31,7 @@ export function findCategory(id: string | null) {
  */
 export function taskTypeLabel(taskType: string | null): string {
   if (!taskType) return "Request";
-  return serviceById(taskType)?.name ?? taskType;
+  return services.find(s => s.id.toLowerCase() === taskType.trim().toLowerCase())?.name ?? taskType;
 }
 
 /**

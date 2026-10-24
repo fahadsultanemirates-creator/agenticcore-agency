@@ -9,7 +9,7 @@ import { useTrackVisit } from "./lib/useTrackVisit";
 
 // The landing page is the sales page, and most of its visitors never sign
 // in. Bundling the dashboard, the request wizard, the projects page and
-// Forge into it took the first load from 294kB to 566kB -- a third of a
+// Maya into it took the first load from 294kB to 566kB -- a third of a
 // megabyte of code for pages a visitor has not asked for. They load when
 // somebody actually navigates to one.
 const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
@@ -28,7 +28,7 @@ const Invoices = lazy(() => import("./pages/Invoices").then((m) => ({ default: m
 const Messages = lazy(() => import("./pages/Messages").then((m) => ({ default: m.Messages })));
 const Files = lazy(() => import("./pages/Files").then((m) => ({ default: m.Files })));
 const Account = lazy(() => import("./pages/Account").then((m) => ({ default: m.Account })));
-const Forge = lazy(() => import("./pages/Forge").then((m) => ({ default: m.Forge })));
+const Maya = lazy(() => import("./pages/Maya").then((m) => ({ default: m.Maya })));
 const Services = lazy(() => import("./pages/Services").then((m) => ({ default: m.Services })));
 const ServiceDetail = lazy(() =>
   import("./pages/ServiceDetail").then((m) => ({ default: m.ServiceDetail })),
@@ -79,8 +79,9 @@ export default function App() {
           <Route path="/reset" element={<ResetRequest />} />
           <Route path="/reset-password" element={<ResetPassword />} />
 
-          {/* Forge answers signed-out visitors too, so it is not protected. */}
-          <Route path="/forge" element={<Forge />} />
+          {/* Maya answers signed-out visitors too, so it is not protected. */}
+          <Route path="/maya" element={<Maya />} />
+        <Route path="/forge" element={<Maya />} />
 
           <Route
             path="/dashboard"

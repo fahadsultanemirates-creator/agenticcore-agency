@@ -132,10 +132,10 @@ export function ServiceDetail() {
             <ArrowRight className="h-4 w-4" />
           </Link>
           <Link
-            to="/forge"
+            to="/maya"
             className="inline-flex items-center justify-center gap-2 rounded-full border-2 border-border px-6 py-3.5 text-sm font-semibold text-fg transition-colors hover:border-cyan-400/60"
           >
-            Not sure? Ask Forge
+            Not sure? Ask Maya
           </Link>
         </div>
       </article>

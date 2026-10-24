@@ -8,12 +8,12 @@ const FAQS = [
     a: "Standard services have a defined scope at a fixed price. Anything marked “From” starts at the published rate and gets a reviewed quotation once the scope is agreed.",
   },
   {
-    q: "Can Forge plan my project?",
-    a: "Forge helps clarify your requirements and prepare a structured project brief. It suggests services from the real catalogue, but it does not issue a binding quote — a person reviews and prices the work.",
+    q: "Can Maya plan my project?",
+    a: "Maya helps clarify your requirements and prepare a structured project brief. It suggests services from the real catalogue, but it does not issue a binding quote — a person reviews and prices the work.",
   },
   {
     q: "Do you build custom AI agents?",
-    a: "Yes — single-task agents, website chatbots, voice assistants and multi-agent frameworks. Each is scoped before it is built, and a person reviews anything consequential before it goes out.",
+    a: "AgenticCore Group covers bots, agents and office frameworks. Visit https://agenticcore.group/services.html to explore those options; Agency focuses on defined website, application and design projects.",
   },
   {
     q: "Can I own my project's source code?",
@@ -33,11 +33,11 @@ const FAQS = [
   },
   {
     q: "Do you provide ongoing bookkeeping and administration?",
-    a: "AgenticCore.biz handles those. Agency can build the tools and automations behind them, but does not run them day to day.",
+    a: "Ongoing department support belongs to AgenticCore Group. AgenticCore.biz provides one-time planning, documents and setup.",
   },
   {
     q: "Can you integrate my existing business software?",
-    a: "Usually, yes — through a supported API, application or MCP-compatible tool. Tell us which systems and we will confirm before quoting.",
+    a: "For connected workflows and office frameworks, explore AgenticCore Group. Any integration needed for an Agency website or application must be explicitly included in its agreed scope.",
   },
 ];
 

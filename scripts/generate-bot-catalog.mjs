@@ -5,11 +5,11 @@
 // copy of the price sheet -- with a comment asking whoever changed prices
 // to remember to update it. Nobody did. By the time of the cyan
 // restructure that copy still listed 54 services at the old prices,
-// including a $5 logo and a $1,000 dashboard, which is what Forge was
+// including a $5 logo and a $1,000 dashboard, which is what Maya was
 // quoting to customers while the website advertised something else.
 //
 // A comment is not a mechanism. This is: the file is regenerated on every
-// build, so Forge quotes the same catalogue the site sells, and a price
+// build, so Maya quotes the same catalogue the site sells, and a price
 // changed in one place cannot be stale in the other.
 //
 // The data is emitted on one line rather than pretty-printed. Nobody
@@ -34,10 +34,13 @@ const grouped = categories.map((category) => ({
       price: formatPrice(service),
       startingFrom: Boolean(service.startingFrom),
       summary: service.summary,
+      limits: service.scopeLimits,
+      deliverables: service.deliverables,
+      inputs: service.customerInputs,
       delivery: service.deliveryEstimate,
       revisions: service.revisions,
       excludes: service.exclusions,
-      externalCosts: service.externalCosts,
+      externalCosts: "externalCosts" in service ? service.externalCosts : ["External subscriptions or licences, if separately agreed"],
     })),
 }));
 
@@ -47,15 +50,15 @@ const bundles = packages.map((pkg) => ({
   price: formatPrice(pkg),
   included: pkg.included,
   excluded: pkg.excluded,
-  delivery: pkg.deliveryEstimate,
-  externalCosts: pkg.externalCosts,
+  delivery: "deliveryEstimate" in pkg ? pkg.deliveryEstimate : "Confirmed when the package scope is agreed",
+  externalCosts: "externalCosts" in pkg ? pkg.externalCosts : ["External subscriptions or licences, if separately agreed"],
 }));
 
 const out = `// GENERATED FILE -- DO NOT EDIT.
 //
 // Written by scripts/generate-bot-catalog.mjs from src/data/catalog.ts on
 // every build. Editing it by hand will be silently undone by the next
-// build, and worse, it would let Forge quote prices the website does not
+// build, and worse, it would let Maya quote prices the website does not
 // charge. Change src/data/catalog.ts instead.
 
 export interface BotCatalogItem {
@@ -65,6 +68,9 @@ export interface BotCatalogItem {
   price: string;
   startingFrom: boolean;
   summary: string;
+  limits: string[];
+  deliverables: string[];
+  inputs: string[];
   delivery: string;
   revisions: number;
   excludes: string[];
