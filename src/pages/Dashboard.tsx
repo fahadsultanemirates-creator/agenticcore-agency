@@ -1,3 +1,4 @@
+import {AcInvoicePayment} from "../components/dashboard/AcInvoicePayment";
 import { ArrowRight, FolderKanban, Send, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -163,6 +164,7 @@ export function Dashboard() {
         </div>
       </section>
 
+      <AcInvoicePayment />
       {/* ---- billing ---- */}
       <section className="border-t border-border py-10">
         <h2 className="font-display text-2xl font-semibold text-fg">Billing</h2>
