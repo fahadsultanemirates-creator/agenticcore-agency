@@ -19,15 +19,8 @@
 // already-signed-in client instead of from Telegram.
 
 import Anthropic from 'https://esm.sh/@anthropic-ai/sdk@0.132.0';
-import { zodOutputFormat } from 'https://esm.sh/@anthropic-ai/sdk@0.132.0/helpers/zod';
-// zod/v4, not the bare entry. @anthropic-ai/sdk's helpers/zod does
-// `import * as z from 'zod/v4'` and calls z.toJSONSchema(), which exists
-// only in zod's v4 API. zod@3.25.76 ships BOTH: the bare specifier is the
-// v3 API, and /v4 is the v4 one. Importing the bare entry here made
-// esm.sh hand the SDK helper the v3 module, so every Claude call died
-// with "TypeError: $.toJSONSchema is not a function" -- which the
-// functions reported to visitors as "Something went wrong on our end",
-// with no clue it was a dependency-resolution problem.
+// Convert and validate with the same pinned Zod module. Avoid the SDK
+// helper's independently resolved Zod version in the edge bundle.
 import { z } from 'https://esm.sh/zod@3.25.76/v4';
 import { BUSINESS_KNOWLEDGE_PROMPT } from './business-knowledge.ts';
 
@@ -235,18 +228,19 @@ async function callClaude<T extends z.ZodTypeAny>(
 ): Promise<z.infer<T>> {
   const client = new Anthropic({ apiKey });
 
-  const response = await client.messages.parse({
+  const jsonSchema = z.toJSONSchema(schema);
+  delete jsonSchema.$schema;
+  const response = await client.messages.create({
     model,
     max_tokens: 4096,
     system: [{ type: 'text', text: systemPrompt, cache_control: { type: 'ephemeral' } }],
-    output_config: { effort: 'low', format: zodOutputFormat(schema) },
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: jsonSchema } },
     messages: [...history, { role: 'user', content: userMessage }]
   });
 
-  if (!response.parsed_output) {
-    throw new Error('Claude response did not parse against the expected output schema');
-  }
-  return response.parsed_output;
+  if (response.stop_reason !== 'end_turn') throw new Error('Claude reply did not complete');
+  const text = response.content.filter(block => block.type === 'text').map(block => block.text).join('');
+  return schema.parse(JSON.parse(text));
 }
 
 // Count-then-insert, exactly as specified (no Postgres sequence): count
