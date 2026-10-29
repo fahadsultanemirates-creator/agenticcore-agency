@@ -368,12 +368,14 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
     reply = parsed.reply;
   }
 
-  await supabaseAdmin.from('bot_messages').insert([
+  const { error: messageError } = await supabaseAdmin.from('bot_messages').insert([
     {
       conversation_id: conversation.id,
       role: 'user',
       content: userMessage,
-      detected_language: detectedLanguage || null
+      detected_language: detectedLanguage || null,
+      uncertain: false,
+      handoff_triggered: false
     },
     {
       conversation_id: conversation.id,
@@ -384,6 +386,7 @@ export async function handleIncomingMessage(params: HandleMessageParams): Promis
       handoff_triggered: needsHuman
     }
   ]);
+  if (messageError) throw new Error('Conversation messages could not be saved');
 
   await supabaseAdmin
     .from('bot_conversations')
