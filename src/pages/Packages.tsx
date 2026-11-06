@@ -12,7 +12,7 @@ export function Packages() {
           Business packages
         </h1>
         <p className="mt-2 max-w-2xl text-fg-muted">
-          Three bundles at a fixed price, each built from services in the catalogue. Every one
+          Project bundles, including the Business Launch Kit moved from Biz, built from services in the catalogue. Every one
           states what it does not cover and what you will still pay other providers.
         </p>
 
@@ -86,7 +86,7 @@ export function Packages() {
 
               <p className="mt-3 flex items-start gap-2 text-xs text-fg-faint">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                <span>You still pay directly for: {pkg.externalCosts.join(", ")}.</span>
+                <span>You still pay directly for: {pkg.externalCosts.length ? pkg.externalCosts.join(", ") : "No additional cost terms are published for this imported package; confirm the scope with the team"}.</span>
               </p>
 
               {/* Built from real catalogue entries, so the package and the

@@ -96,7 +96,7 @@ export function Request() {
    * the invoice and the 30% deposit are both computed from. Those go in
    * as drafts with a null price, and a person quotes them.
    */
-  const quoteFirst = Boolean(service && needsQuote(service));
+  const quoteFirst = Boolean((service && (needsQuote(service) || service.id.startsWith("BIZ-"))) || pkg?.id === "PKG-LAUNCH-KIT");
   const agreedPrice = chosen && !quoteFirst ? chosen.priceUsd : null;
 
   const ready = Boolean(chosen) && description.trim().length > 0;
