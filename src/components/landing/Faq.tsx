@@ -33,7 +33,7 @@ const FAQS = [
   },
   {
     q: "Do you provide ongoing bookkeeping and administration?",
-    a: "Ongoing department support belongs to AgenticCore Group. AgenticCore.biz provides one-time planning, documents and setup.",
+    a: "Ongoing department support belongs to AgenticCore Group. AgenticCore Agency Business Services provides one-time planning, documents and setup.",
   },
   {
     q: "Can you integrate my existing business software?",

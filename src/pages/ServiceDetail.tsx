@@ -13,7 +13,7 @@ import { NotFound } from "./NotFound";
 
 const SISTER = {
   click: { name: "AgenticCore.click", href: "https://agenticcore.click" },
-  biz: { name: "AgenticCore.biz", href: "https://agenticcore.biz" },
+  biz: { name: "AgenticCore Group", href: "https://agenticcore.group/services.html" },
 } as const;
 
 export function ServiceDetail() {

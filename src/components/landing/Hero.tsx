@@ -14,19 +14,19 @@ export function Hero() {
       <div className="relative mx-auto max-w-5xl px-6 pt-16 pb-20 text-center md:pt-24 md:pb-28">
         <span className="animate-fade-up inline-flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-xs font-semibold tracking-wide text-fg-muted uppercase sm:text-sm">
           <Cpu className="h-4 w-4 shrink-0 text-cyan-400" />
-          Custom technology. Built for your business.
+          Business services. Creative & technical projects.
         </span>
 
         <h1 className="animate-fade-up mt-8 font-display text-4xl leading-[1.05] font-semibold tracking-tight text-fg sm:text-6xl md:text-7xl">
-          We Build the Technology <span className="text-cyan-400">Behind Your Business.</span>
+          Your next project.<br/><span className="text-cyan-400">One place to bring it together.</span>
         </h1>
 
         <p className="animate-fade-up mx-auto mt-6 max-w-2xl text-lg text-fg-muted sm:text-xl">
-          Websites. Applications. Brand identity. Design.
+          Documents. Research. Websites. Design.
         </p>
 
         <p className="animate-fade-up mx-auto mt-4 max-w-2xl text-base text-fg-muted">
-          Launch a professional website, build a scoped application or refine your brand and interface.
+          Prepare a business plan, commission research, launch a website or refine your brand and interface.
           Each project has defined deliverables, transparent starting prices and a dashboard.
           Managed offices and framework builds are available through AgenticCore Group.
         </p>
@@ -72,7 +72,8 @@ export function Hero() {
             composed for the picture, and the brief is explicit that
             Agency does not invent customer results. Shown without that
             line, a visitor reads them as ours. */}
-        <figure
+        <div className="mx-auto mt-10 grid max-w-4xl gap-4 text-left sm:grid-cols-2"><Link to="/services?category=launch" className="rounded-2xl border border-border bg-surface p-6"><p className="text-xs uppercase tracking-widest text-cyan-400">Business Services</p><h2 className="mt-2 font-display text-xl">Documents. Research. A clearer plan.</h2><p className="mt-2 text-sm text-fg-muted">Business planning, reports, administrative templates and customer-record setup. Formerly on Biz.</p></Link><Link to="/services?category=build" className="rounded-2xl border border-border bg-surface p-6"><p className="text-xs uppercase tracking-widest text-cyan-400">Creative &amp; Technical Projects</p><h2 className="mt-2 font-display text-xl">Design. Websites. Digital products.</h2><p className="mt-2 text-sm text-fg-muted">Explore the existing Agency catalogue for your next project.</p></Link></div>
+<figure
           className="animate-fade-up mx-auto mt-14 max-w-5xl md:mt-20"
           style={{ animationDelay: "150ms" }}
         >

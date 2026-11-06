@@ -34,7 +34,7 @@ const LEGAL = [
 // repositioned around business operations.
 const ELSEWHERE = [
   { href: "https://agenticcore.click", label: "agenticcore.click — fast, standardised digital tasks" },
-  { href: "https://agenticcore.biz", label: "agenticcore.biz — business setup and back-office" },
+  { href: "https://agenticcore.biz", label: "agenticcore.biz — AgenticCore Bot · private testing" },
 ];
 
 export function Footer() {
@@ -45,7 +45,7 @@ export function Footer() {
           <div className="flex flex-col items-center gap-2 sm:items-start">
             <Logo variant="lockup" />
             <p className="text-sm text-fg-faint">
-              The technology-development side of the AgenticCore family.
+              Individual business, creative and technical projects in the AgenticCore family.
             </p>
           </div>
 

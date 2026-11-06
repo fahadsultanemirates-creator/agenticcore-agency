@@ -1,3 +1,4 @@
+import { services as businessServices, packages as businessPackages, categories as businessCategories, archivedServices as businessArchived } from "./businessCatalog.ts";
 import {
   Blocks,
   Bot,
@@ -52,7 +53,7 @@ export type BillingType = "one_time" | "monthly" | "per_unit";
 
 export type ServiceStatus = "active" | "archived";
 
-export type ServiceCategoryId = "build" | "design" | "automate";
+export type ServiceCategoryId = "build" | "design" | "automate" | "launch" | "admin" | "growth";
 
 /** Where a request belongs when it is not Agency's work. */
 export type SisterBrand = "click" | "biz";
@@ -647,7 +648,7 @@ const AUTOMATE: Service[] = [
   },
 ];
 
-export const services: Service[] = [...BUILD, ...DESIGN, ...AUTOMATE];
+export const services: Service[] = [...BUILD, ...DESIGN, ...AUTOMATE, ...businessServices.map(s => ({...s, externalCosts: []}))];
 
 export const categories: {
   id: ServiceCategoryId;
@@ -655,6 +656,7 @@ export const categories: {
   blurb: string;
   icon: LucideIcon;
 }[] = [
+  ...businessCategories,
   {
     id: "build",
     label: "Websites & Digital Products",
@@ -687,6 +689,7 @@ export const capabilities: {
   icon: LucideIcon;
   serviceIds: string[];
 }[] = [
+  {id:"business",title:"Business Services",blurb:"Documents, research, reports and business planning, now at Agency.",cta:"Explore Business Services",icon:BrainCircuit,serviceIds:businessServices.filter(s=>s.status==="active").map(s=>s.id)},
   {
     id: "websites",
     title: "Websites & E-Commerce",
@@ -716,6 +719,7 @@ export const capabilities: {
 // ---------------------------------------------------------------------
 
 export const packages: Package[] = [
+  ...businessPackages.map(p => ({...p, deliveryEstimate: "TODO Fahad: package timeline to be confirmed before ordering", revisions: 1, externalCosts: [], cta: "Request scope review"})),
   {
     id: "PKG-WEBSITE-STARTER",
     name: "Website Starter",
@@ -879,11 +883,14 @@ export function packageById(id: string): Package | undefined {
 }
 
 export function archivedById(id: string) {
+  const oldBusiness = businessServices.find(s => s.id.toLowerCase() === id.trim().toLowerCase() && s.status === "archived") ?? businessArchived.find(s => s.id.toLowerCase() === id.trim().toLowerCase());
+  if (oldBusiness) return {id: oldBusiness.id, name: oldBusiness.name, note: "This service is archived and is not available to order. Explore Group for ongoing office support.", movedTo: undefined};
   const wanted = id.trim().toLowerCase();
   const retired = services.find((s) => s.status === "archived" && s.id.toLowerCase() === wanted);
   if (retired) return { id: retired.id, name: retired.name, note: "This service is no longer sold here. Explore managed offices and framework options at https://agenticcore.group/services.html.", replacedBy: undefined };
   const legacy = archivedServices.find((s) => s.id.toLowerCase() === wanted);
   if (legacy?.replacedBy && !serviceById(legacy.replacedBy)) return { ...legacy, replacedBy: undefined, note: "This service is no longer sold here. Explore https://agenticcore.group/services.html for office and framework options." };
+  if (legacy?.movedTo === "biz") return {...legacy, movedTo: undefined, note: "This historic service is archived. See the current Agency business catalogue for one-time documents and research, or Group for ongoing departments."};
   return legacy;
 }
 

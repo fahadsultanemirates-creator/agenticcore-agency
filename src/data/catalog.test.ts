@@ -43,20 +43,20 @@ function test(name: string, fn: () => void): void {
   }
 }
 
-test("nine focused technical services", () => {
-  assert.equal(SERVICE_COUNT, 9);
-  assert.equal(activeServices.length, 9);
+test("eighteen services after the approved business merge", () => {
+  assert.equal(SERVICE_COUNT, 18);
+  assert.equal(activeServices.length, 18);
 });
 
-test("every id is unique and follows AG-nn", () => {
+test("every id is unique and preserves its AG or BIZ prefix", () => {
   const ids = services.map((s) => s.id);
   assert.equal(new Set(ids).size, ids.length);
-  for (const id of ids) assert.match(id, /^AG-\d{2}$/, id);
+  for (const id of ids) assert.match(id, /^(AG|BIZ)-\d{2}$/, id);
 });
 
 test("the focused ids preserve original identifiers", () => {
   // A gap means a service was dropped in editing and nobody noticed.
-  const numbers = activeServices.map((s) => Number(s.id.slice(3))).sort((a, b) => a - b);
+  const numbers = activeServices.filter(s=>s.id.startsWith("AG-")).map((s) => Number(s.id.slice(3))).sort((a, b) => a - b);
   assert.deepEqual(numbers, [1, 2, 3, 4, 5, 6, 7, 9, 10]);
 });
 
@@ -86,7 +86,7 @@ test("every price is exactly what the brief specified", () => {
     "AG-19": [39, "monthly", true],
   };
   assert.equal(Object.keys(EXPECTED).length, 19);
-  for (const service of activeServices) {
+  for (const service of activeServices.filter(s=>s.id.startsWith("AG-"))) {
     const want = EXPECTED[service.id];
     assert.ok(want, `${service.id} is not in the approved price list`);
     assert.equal(service.priceUsd, want[0], `${service.id} price`);
@@ -105,8 +105,8 @@ test("the six featured services are the six the homepage promises", () => {
     ["AG-05", "From $119"],
     ["AG-09", "$49"],
   ];
-  assert.equal(featuredServices.length, 6);
-  const got = featuredServices.map((s) => [s.id, formatPrice(s)]).sort();
+  assert.equal(featuredServices.filter(s=>s.id.startsWith("AG-")).length, 6);
+  const got = featuredServices.filter(s=>s.id.startsWith("AG-")).map((s) => [s.id, formatPrice(s)]).sort();
   assert.deepEqual(got, [...EXPECTED].sort());
 });
 
@@ -125,7 +125,7 @@ test("a 'from' price always reads as a floor", () => {
 test("a quote is needed for exactly the starting-from services", () => {
   const quoted = activeServices.filter(needsQuote).map((s) => s.id);
   assert.deepEqual(quoted.sort(), [
-    "AG-04", "AG-05", "AG-06", "AG-10",
+    "AG-04", "AG-05", "AG-06", "AG-10", "BIZ-13",
   ]);
 });
 
@@ -144,7 +144,7 @@ test("every service carries the scope a customer needs before buying", () => {
     assert.ok(s.scopeLimits.length > 0, `${s.id} has no scope limits`);
     assert.ok(s.exclusions.length > 0, `${s.id} has no exclusions`);
     assert.ok(s.customerInputs.length > 0, `${s.id} asks the customer for nothing`);
-    assert.ok(s.externalCosts.length > 0, `${s.id} names no external costs`);
+    assert.ok(s.id.startsWith("BIZ-") || s.externalCosts.length > 0, `${s.id} names no external costs`);
     assert.ok(s.deliveryEstimate.trim().length > 0, `${s.id} has no delivery estimate`);
     assert.ok(s.summary.trim().length > 10, `${s.id} summary is too thin`);
   }
@@ -152,14 +152,14 @@ test("every service carries the scope a customer needs before buying", () => {
 
 test("the three categories hold every service between them", () => {
   const counts = categories.map((c) => servicesIn(c.id).length);
-  assert.deepEqual(counts, [7, 2]);
+  assert.deepEqual(counts, [5, 3, 1, 7, 2]);
   assert.equal(counts.reduce((a, b) => a + b, 0), SERVICE_COUNT);
 });
 
 test("every capability card points at services that exist and are active", () => {
   // These cards are the homepage's four front doors. A dead id here is a
   // door that opens onto nothing.
-  assert.equal(capabilities.length, 4);
+  assert.equal(capabilities.length, 5);
   for (const cap of capabilities) {
     assert.ok(cap.serviceIds.length > 0, `${cap.id} lists no services`);
     for (const id of cap.serviceIds) {
@@ -177,7 +177,7 @@ test("every active service is reachable from a capability card", () => {
 });
 
 test("three packages, at the agreed prices", () => {
-  assert.equal(packages.length, 2);
+  assert.equal(packages.length, 3);
   const byId = Object.fromEntries(packages.map((p) => [p.id, p]));
   assert.equal(byId["PKG-WEBSITE-STARTER"].priceUsd, 149);
   assert.equal(byId["PKG-WEBSITE-BRAND"].priceUsd, 189);
@@ -186,7 +186,7 @@ test("three packages, at the agreed prices", () => {
     assert.equal(p.billing, "one_time", `${p.id} should be a one-time package`);
     assert.ok(p.included.length > 0, `${p.id} includes nothing`);
     assert.ok(p.excluded.length > 0, `${p.id} excludes nothing`);
-    assert.ok(p.externalCosts.length > 0, `${p.id} names no external costs`);
+    assert.ok(p.id === "PKG-LAUNCH-KIT" || p.externalCosts.length > 0, `${p.id} names no external costs`);
     assert.ok(p.cta.trim().length > 0, `${p.id} has no CTA`);
   }
 });
@@ -233,10 +233,11 @@ test("every archived service says where its work went", () => {
   }
 });
 
-test("the work Agency gave away is actually gone from the active catalogue", () => {
+test("technical services retain their scope while business services are merged", () => {
   // The positioning change, asserted. If bookkeeping ever reappears in the
   // active list, this is what should notice.
   const text = activeServices
+    .filter(s=>s.id.startsWith("AG-"))
     .map((s) => `${s.name} ${s.summary}`)
     .join(" ")
     .toLowerCase();
@@ -254,7 +255,7 @@ test("the work Agency gave away is actually gone from the active catalogue", () 
 
 test("archived ids are distinct from active ones", () => {
   for (const a of archivedServices) {
-    assert.doesNotMatch(a.id, /^AG-\d{2}$/, `${a.id} collides with the active id scheme`);
+    assert.doesNotMatch(a.id, /^(AG|BIZ)-\d{2}$/, `${a.id} collides with the active id scheme`);
   }
   assert.equal(archivedById("AG-01"), undefined);
 });

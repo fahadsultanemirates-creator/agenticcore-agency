@@ -62,7 +62,7 @@ export function Services() {
           All {SERVICE_COUNT} services
         </h1>
         <p className="mt-2 max-w-2xl text-fg-muted">
-          Every price here is the catalogue price. Anything marked “From” starts there and is
+          Business Services — documents, reports, research and planning — now sit alongside Creative & Technical Projects. Every price here is the catalogue price. Anything marked “From” starts there and is
           quoted once the scope is agreed — it is never charged as if it were the final figure.
         </p>
 
