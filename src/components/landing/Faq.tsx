@@ -13,7 +13,7 @@ const FAQS = [
   },
   {
     q: "Do you build custom AI agents?",
-    a: "AgenticCore Group covers bots, agents and office frameworks. Visit https://agenticcore.group/services.html to explore those options; Agency focuses on defined website, application and design projects.",
+    a: "AgenticCore Group covers bots, agents and office frameworks. Visit https://agenticcore.group/services to explore those options; Agency focuses on defined website, application and design projects.",
   },
   {
     q: "Can I own my project's source code?",

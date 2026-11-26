@@ -12,7 +12,7 @@ export function TeamSection() {
    <div role="img" aria-label={name + ", illustrated AI character"} style={{height:160,backgroundImage:"url(https://agenticcore.group/assets/team.png)",backgroundSize:"500% auto",backgroundPosition:`${(i%5)*25}% ${i<5?23:91}%`,backgroundRepeat:"no-repeat",borderRadius:12}} />
    <h3 className="mt-3 font-semibold text-fg">{name}</h3><p className="text-xs text-fg-muted">{role}</p>
   </article>)}</div>
-  <div className="mt-6 flex flex-wrap gap-4"><Link to="/maya" className="rounded-full border border-border px-5 py-3 font-semibold text-fg">Talk to Maya ↗</Link><a href="https://agenticcore.group/services.html" className="rounded-full border border-border px-5 py-3 font-semibold text-fg">Explore your digital office ↗</a></div>
+  <div className="mt-6 flex flex-wrap gap-4"><Link to="/maya" className="rounded-full border border-border px-5 py-3 font-semibold text-fg">Talk to Maya ↗</Link><a href="https://agenticcore.group/services" className="rounded-full border border-border px-5 py-3 font-semibold text-fg">Explore your digital office ↗</a></div>
   <p className="mt-4 text-xs text-fg-faint">AI characters represent the team’s roles. The shared execution framework is planned; a conversation does not activate services or authorise payment.</p>
  </section>;
 }

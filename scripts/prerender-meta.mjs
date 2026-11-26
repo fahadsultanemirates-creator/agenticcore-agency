@@ -156,7 +156,9 @@ for (const required of ["<title>", 'property="og:title"', 'rel="canonical"']) {
 let written = 0;
 let aliases = 0;
 for (const page of pages) {
-  const url = `${ORIGIN}/${page.path}`;
+  // Netlify serves these as lowercase directory URLs (/services/ag-01/); the
+  // canonical must be that exact form, not one that redirects.
+  const url = `${ORIGIN}/${page.path.toLowerCase()}/`;
   const fullTitle = `${page.title} | ${BRAND}`;
   const title = escapeHtml(fullTitle);
   const description = escapeHtml(page.description);
@@ -241,9 +243,9 @@ for (const page of pages) {
 // A sitemap costs nothing now that the list of real URLs exists here.
 const sitemap = [
   `${ORIGIN}/`,
-  ...pages.filter((p) => !["terms", "privacy"].includes(p.path)).map((p) => `${ORIGIN}/${p.path}`),
-  `${ORIGIN}/terms`,
-  `${ORIGIN}/privacy`,
+  ...pages.filter((p) => !["terms", "privacy"].includes(p.path)).map((p) => `${ORIGIN}/${p.path.toLowerCase()}/`),
+  `${ORIGIN}/terms/`,
+  `${ORIGIN}/privacy/`,
 ]
   .map((loc) => `  <url><loc>${loc}</loc></url>`)
   .join("\n");

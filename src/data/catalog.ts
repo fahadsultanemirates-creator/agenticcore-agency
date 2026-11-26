@@ -850,6 +850,10 @@ export const featuredServices = activeServices.filter((s) => s.featured);
 
 export const SERVICE_COUNT = activeServices.length;
 
+/** "Two bundles" -- worded from the live package list so copy never drifts from it. */
+const COUNT_WORDS = ["No", "One", "Two", "Three", "Four", "Five", "Six"];
+export const PACKAGE_COUNT_TEXT = `${COUNT_WORDS[packages.length] ?? packages.length} bundle${packages.length === 1 ? "" : "s"}`;
+
 export function servicesIn(category: ServiceCategoryId): Service[] {
   return activeServices.filter((s) => s.category === category);
 }
@@ -881,9 +885,9 @@ export function packageById(id: string): Package | undefined {
 export function archivedById(id: string) {
   const wanted = id.trim().toLowerCase();
   const retired = services.find((s) => s.status === "archived" && s.id.toLowerCase() === wanted);
-  if (retired) return { id: retired.id, name: retired.name, note: "This service is no longer sold here. Explore managed offices and framework options at https://agenticcore.group/services.html.", replacedBy: undefined };
+  if (retired) return { id: retired.id, name: retired.name, note: "This service is no longer sold here. Explore managed offices and framework options at https://agenticcore.group/services.", replacedBy: undefined };
   const legacy = archivedServices.find((s) => s.id.toLowerCase() === wanted);
-  if (legacy?.replacedBy && !serviceById(legacy.replacedBy)) return { ...legacy, replacedBy: undefined, note: "This service is no longer sold here. Explore https://agenticcore.group/services.html for office and framework options." };
+  if (legacy?.replacedBy && !serviceById(legacy.replacedBy)) return { ...legacy, replacedBy: undefined, note: "This service is no longer sold here. Explore https://agenticcore.group/services for office and framework options." };
   return legacy;
 }
 

@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { DashboardNav } from "../components/dashboard/DashboardNav";
 import { DashboardShell } from "../components/dashboard/DashboardShell";
 import { Panel } from "../components/dashboard/Panel";
-import { serviceById } from "../data/catalog";
+import { SERVICE_COUNT, serviceById } from "../data/catalog";
 import { statusLabel, useOrders, type OrderRow } from "../lib/dashboardData";
 import { money } from "../lib/format";
 import { taskTypeLabel, upfrontAmountDue } from "../lib/pricing";
@@ -34,7 +34,7 @@ export function Orders() {
             <>
               No orders yet.{" "}
               <Link to="/services" className="font-semibold text-cyan-400 hover:underline">
-                Browse the 19 services
+                Browse the {SERVICE_COUNT} services
               </Link>{" "}
               to start one.
             </>

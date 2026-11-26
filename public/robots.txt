@@ -17,8 +17,6 @@ Disallow: /reset
 Disallow: /reset-password
 Disallow: /check-email
 Disallow: /admin.html
-Disallow: /ai-trading.html
-Disallow: /business-pool.html
 Disallow: /project-view.html
 
 Sitemap: https://agenticcore.agency/sitemap.xml

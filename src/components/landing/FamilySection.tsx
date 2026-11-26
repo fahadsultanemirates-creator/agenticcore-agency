@@ -118,7 +118,7 @@ export function FamilySection() {
             </a>
           );
         })}
-        <a href="https://agenticcore.group/services.html" className="mt-8 block rounded-2xl border border-border bg-surface p-6 text-fg hover:underline">
+        <a href="https://agenticcore.group/services" className="mt-8 block rounded-2xl border border-border bg-surface p-6 text-fg hover:underline">
           <strong>AgenticCore Group — your digital office ↗</strong>
           <p className="mt-2 text-sm text-fg-muted">Managed departments, recurring support and your own office framework. Explore services and pricing with the same AgenticCore team.</p>
         </a>

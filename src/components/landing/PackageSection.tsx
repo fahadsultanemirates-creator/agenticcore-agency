@@ -1,6 +1,6 @@
 import { ArrowRight, Check, X } from "lucide-react";
 import { Link } from "react-router-dom";
-import { formatPrice, packages } from "../../data/catalog";
+import { formatPrice, PACKAGE_COUNT_TEXT, packages } from "../../data/catalog";
 
 export function PackageSection() {
   return (
@@ -10,7 +10,7 @@ export function PackageSection() {
           Choose Your Starting Point.
         </h2>
         <p className="mt-2 max-w-xl text-fg-muted">
-          Three bundles at a fixed price. Every one lists what it does not cover, because that is
+          {PACKAGE_COUNT_TEXT} at a fixed price. Every one lists what it does not cover, because that is
           the half people find out about later.
         </p>
 

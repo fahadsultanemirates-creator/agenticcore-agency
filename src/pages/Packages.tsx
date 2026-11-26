@@ -1,18 +1,18 @@
 import { ArrowRight, Check, Clock, Info, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PublicShell } from "../components/PublicShell";
-import { formatPrice, packageSavingUsd, packages, serviceById } from "../data/catalog";
+import { formatPrice, packageSavingUsd, packages, serviceById, PACKAGE_COUNT_TEXT, SERVICE_COUNT } from "../data/catalog";
 
 export function Packages() {
   return (
     <PublicShell title="Packages">
       <section className="py-10 sm:py-14">
-        <a href="https://agenticcore.group/services.html" className="mb-6 block rounded-xl border border-border bg-surface p-4 text-sm text-fg-muted">Looking for ongoing departments or an office framework? Explore AgenticCore Group ↗</a>
+        <a href="https://agenticcore.group/services" className="mb-6 block rounded-xl border border-border bg-surface p-4 text-sm text-fg-muted">Looking for ongoing departments or an office framework? Explore AgenticCore Group ↗</a>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
           Business packages
         </h1>
         <p className="mt-2 max-w-2xl text-fg-muted">
-          Three bundles at a fixed price, each built from services in the catalogue. Every one
+          {PACKAGE_COUNT_TEXT} at a fixed price, each built from services in the catalogue. Every one
           states what it does not cover and what you will still pay other providers.
         </p>
 
@@ -125,7 +125,7 @@ export function Packages() {
         <p className="mt-8 text-sm text-fg-muted">
           None of these quite right?{" "}
           <Link to="/services" className="font-semibold text-cyan-400 hover:underline">
-            Browse all 19 services
+            Browse all {SERVICE_COUNT} services
           </Link>{" "}
           or{" "}
           <Link to="/maya" className="font-semibold text-cyan-400 hover:underline">

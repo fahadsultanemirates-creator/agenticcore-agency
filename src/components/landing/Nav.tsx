@@ -9,7 +9,6 @@ import { Logo } from "../Logo";
 // full catalogue from anywhere else on the site.
 const LINKS: { to: string; label: string; anchor?: boolean }[] = [
   { to: "/services", label: "Services" },
-  { to: "/services?capability=ai", label: "AI & Automation" },
   { to: "/packages", label: "Packages" },
   { to: "/#how-it-works", label: "How It Works", anchor: true },
   { to: "/maya", label: "Create a Project" },

@@ -57,7 +57,7 @@ export function Services() {
   return (
     <PublicShell title="Services">
       <section className="py-10 sm:py-14">
-        <a href="https://agenticcore.group/services.html" className="mb-6 block rounded-xl border border-border bg-surface p-4 text-sm text-fg-muted">Looking for ongoing departments or an office framework? Explore AgenticCore Group ↗</a>
+        <a href="https://agenticcore.group/services" className="mb-6 block rounded-xl border border-border bg-surface p-4 text-sm text-fg-muted">Looking for ongoing departments or an office framework? Explore AgenticCore Group ↗</a>
         <h1 className="font-display text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
           All {SERVICE_COUNT} services
         </h1>
